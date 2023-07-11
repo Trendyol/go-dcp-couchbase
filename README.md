@@ -12,7 +12,7 @@ Couchbase bucket in near real-time.
 * Handling different DCP events such as **expiration, deletion and mutation**(see [Example](#example)).
 * **Managing batch configurations** such as maximum batch size, batch bytes, batch ticker durations.
 * **Scale up and down** by custom membership algorithms(Couchbase, KubernetesHa, Kubernetes StatefulSet or
-  Static, see [examples](https://github.com/Trendyol/go-dcp-client#examples)).
+  Static, see [examples](https://github.com/Trendyol/go-dcp#examples)).
 * **Easily manageable configurations**.
 
 ## Example
@@ -74,7 +74,7 @@ func main() {
 
 ### Dcp Configuration
 
-Check out on [go-dcp-client](https://github.com/Trendyol/go-dcp-client#configuration)
+Check out on [go-dcp](https://github.com/Trendyol/go-dcp#configuration)
 
 ### Couchbase Specific Configuration
 
@@ -91,7 +91,7 @@ Check out on [go-dcp-client](https://github.com/Trendyol/go-dcp-client#configura
 
 ## Exposed metrics
 
-For DCP related metrics see [also](https://github.com/Trendyol/go-dcp-client#exposed-metrics).
+For DCP related metrics see [also](https://github.com/Trendyol/go-dcp#exposed-metrics).
 
 ## Contributing
 
