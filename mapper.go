@@ -1,6 +1,6 @@
-package gocouchbaseconnectcouchbase
+package dcpcouchbase
 
-import "github.com/Trendyol/go-couchbase-connect-couchbase/couchbase"
+import "github.com/Trendyol/go-dcp-couchbase/couchbase"
 
 type Mapper func(event couchbase.Event) []couchbase.CBActionDocument
 

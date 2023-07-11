@@ -1,4 +1,4 @@
-module github.com/Trendyol/go-couchbase-connect-couchbase
+module github.com/Trendyol/go-dcp-couchbase
 
 go 1.20
 

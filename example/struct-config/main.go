@@ -1,16 +1,16 @@
 package main
 
 import (
+	"github.com/Trendyol/go-dcp-couchbase"
 	"time"
 
-	gocouchbaseconnectcouchbase "github.com/Trendyol/go-couchbase-connect-couchbase"
-	"github.com/Trendyol/go-couchbase-connect-couchbase/config"
 	dcpClientConfig "github.com/Trendyol/go-dcp-client/config"
 	"github.com/Trendyol/go-dcp-client/logger"
+	"github.com/Trendyol/go-dcp-couchbase/config"
 )
 
 func main() {
-	c, err := gocouchbaseconnectcouchbase.NewConnector(&config.Config{
+	c, err := dcpcouchbase.NewConnector(&config.Config{
 		Dcp: dcpClientConfig.Dcp{
 			Hosts:      []string{"localhost:8091"},
 			Username:   "user",
@@ -42,7 +42,7 @@ func main() {
 			BatchSizeLimit:   10,
 			RequestTimeoutMs: 1000 * 10,
 		},
-	}, gocouchbaseconnectcouchbase.DefaultMapper, logger.Log, logger.ErrorLog)
+	}, dcpcouchbase.DefaultMapper, logger.Log, logger.ErrorLog)
 	if err != nil {
 		panic(err)
 	}

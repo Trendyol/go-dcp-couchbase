@@ -5,7 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Trendyol/go-couchbase-connect-couchbase/config"
+	"github.com/Trendyol/go-dcp-couchbase/config"
+
 	"github.com/Trendyol/go-dcp-client/logger"
 	"github.com/Trendyol/go-dcp-client/models"
 	"github.com/couchbase/gocbcore/v10"

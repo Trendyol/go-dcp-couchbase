@@ -1,8 +1,8 @@
-# Go Couchbase Connect Couchbase
+# Go Dcp Couchbase
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/Trendyol/go-couchbase-connect-couchbase.svg)](https://pkg.go.dev/github.com/Trendyol/go-couchbase-connect-couchbase) [![Go Report Card](https://goreportcard.com/badge/github.com/Trendyol/go-couchbase-connect-couchbase)](https://goreportcard.com/report/github.com/Trendyol/go-couchbase-connect-couchbase)
+[![Go Reference](https://pkg.go.dev/badge/github.com/Trendyol/go-dcp-couchbase.svg)](https://pkg.go.dev/github.com/Trendyol/go-dcp-couchbase) [![Go Report Card](https://goreportcard.com/badge/github.com/Trendyol/go-dcp-couchbase)](https://goreportcard.com/report/github.com/Trendyol/go-dcp-couchbase)
 
-**Go Couchbase Connect Couchbase** streams documents from Couchbase Database Change Protocol (DCP) and writes to
+**Go Dcp Couchbase** streams documents from Couchbase Database Change Protocol (DCP) and writes to
 Couchbase bucket in near real-time.
 
 ## Features
@@ -26,11 +26,11 @@ func defaultMapper(event couchbase.Event) []couchbase.CBActionDocument {
 }
 
 func main() {
-    c, err := gocouchbaseconnectcouchbase.NewConnector(&config.Config{
+    c, err := dcpcouchbase.NewConnector(&config.Config{
         Dcp: dcpClientConfig.Dcp{
             Hosts:      []string{"localhost:8091"},
             Username:   "user",
-            Password:   "password",
+            Password:   "123456",
             BucketName: "dcp-test",
             Dcp: dcpClientConfig.ExternalDcp{
                 Group: dcpClientConfig.DCPGroup{
@@ -42,7 +42,7 @@ func main() {
             },
             Metadata: dcpClientConfig.Metadata{
                 Config: map[string]string{
-                    "bucket":     "checkpoint-bucket-name",
+                    "bucket":     "dcp-test-meta",
                     "scope":      "_default",
                     "collection": "_default",
                 },
@@ -95,7 +95,7 @@ For DCP related metrics see [also](https://github.com/Trendyol/go-dcp-client#exp
 
 ## Contributing
 
-Go Couchbase Connect Couchbase is always open for direct contributions. For more information please check
+Go Dcp Couchbase is always open for direct contributions. For more information please check
 our [Contribution Guideline document](./CONTRIBUTING.md).
 
 ## License

@@ -1,10 +1,11 @@
-package gocouchbaseconnectcouchbase
+package dcpcouchbase
 
 import (
 	"errors"
 
-	"github.com/Trendyol/go-couchbase-connect-couchbase/config"
-	"github.com/Trendyol/go-couchbase-connect-couchbase/couchbase"
+	"github.com/Trendyol/go-dcp-couchbase/config"
+	"github.com/Trendyol/go-dcp-couchbase/couchbase"
+
 	godcpclient "github.com/Trendyol/go-dcp-client"
 	dcpClientConfig "github.com/Trendyol/go-dcp-client/config"
 	"github.com/Trendyol/go-dcp-client/logger"

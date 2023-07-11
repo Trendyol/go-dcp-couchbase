@@ -2,11 +2,11 @@ module example
 
 go 1.20
 
-replace github.com/Trendyol/go-couchbase-connect-couchbase => ./../..
+replace github.com/Trendyol/go-dcp-couchbase => ./../..
 
 require (
-	github.com/Trendyol/go-couchbase-connect-couchbase v0.0.0
 	github.com/Trendyol/go-dcp-client v0.0.62
+	github.com/Trendyol/go-dcp-couchbase v0.0.0
 )
 
 require (
