@@ -5,15 +5,17 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Trendyol/go-dcp/couchbase"
+
 	"github.com/Trendyol/go-dcp-couchbase/config"
 
-	"github.com/Trendyol/go-dcp-client/logger"
-	"github.com/Trendyol/go-dcp-client/models"
+	"github.com/Trendyol/go-dcp/logger"
+	"github.com/Trendyol/go-dcp/models"
 	"github.com/couchbase/gocbcore/v10"
 )
 
 type Processor struct {
-	cbClient            Client
+	client              Client
 	logger              logger.Logger
 	errorLogger         logger.Logger
 	batchTicker         *time.Ticker
@@ -33,14 +35,14 @@ func NewProcessor(config *config.Config,
 	errorLogger logger.Logger,
 	dcpCheckpointCommit func(),
 ) (*Processor, error) {
-	cbClient := NewClient(&config.Couchbase)
-	err := cbClient.Connect()
+	client := NewClient(&config.Couchbase)
+	err := client.Connect()
 	if err != nil {
 		return nil, err
 	}
 
 	processor := &Processor{
-		cbClient:            cbClient,
+		client:              client,
 		batchTicker:         time.NewTicker(config.Couchbase.BatchTickerDuration),
 		batchSizeLimit:      config.Couchbase.BatchSizeLimit,
 		batchByteSizeLimit:  config.Couchbase.BatchByteSizeLimit,
@@ -66,7 +68,7 @@ func (b *Processor) Close() {
 	b.batchTicker.Stop()
 
 	b.flushMessages()
-	b.cbClient.Close()
+	b.client.Close()
 }
 
 func (b *Processor) flushMessages() {
@@ -104,12 +106,12 @@ func (b *Processor) bulkRequest() error {
 	defer cancel()
 	for _, v := range b.batch {
 		if v.Type == Index {
-			err := b.cbClient.CreateDocument(ctx, b.scopeName, b.collectionName, v.ID, v.Source, 0)
+			err := couchbase.CreateDocument(ctx, b.client.GetAgent(), b.scopeName, b.collectionName, v.ID, v.Source, 0, 0)
 			if err != nil {
 				return err
 			}
 		} else {
-			err := b.cbClient.DeleteDocument(ctx, b.scopeName, b.collectionName, v.ID)
+			err := couchbase.DeleteDocument(ctx, b.client.GetAgent(), b.scopeName, b.collectionName, v.ID)
 			var keyValueErr *gocbcore.KeyValueError
 			if errors.As(err, &keyValueErr) {
 				return nil

@@ -6,10 +6,10 @@ import (
 	"github.com/Trendyol/go-dcp-couchbase/config"
 	"github.com/Trendyol/go-dcp-couchbase/couchbase"
 
-	godcpclient "github.com/Trendyol/go-dcp-client"
-	dcpClientConfig "github.com/Trendyol/go-dcp-client/config"
-	"github.com/Trendyol/go-dcp-client/logger"
-	"github.com/Trendyol/go-dcp-client/models"
+	"github.com/Trendyol/go-dcp"
+	dcpClientConfig "github.com/Trendyol/go-dcp/config"
+	"github.com/Trendyol/go-dcp/logger"
+	"github.com/Trendyol/go-dcp/models"
 )
 
 type Connector interface {
@@ -18,7 +18,7 @@ type Connector interface {
 }
 
 type connector struct {
-	dcp         godcpclient.Dcp
+	dcp         dcp.Dcp
 	config      *config.Config
 	mapper      Mapper
 	logger      logger.Logger
@@ -62,12 +62,12 @@ func (c *connector) listener(ctx *models.ListenerContext) {
 	c.processor.AddActions(ctx, e.EventTime, actions, e.CollectionName)
 }
 
-func createDcp(cfg any, listener models.Listener, logger logger.Logger, errorLogger logger.Logger) (godcpclient.Dcp, error) {
+func createDcp(cfg any, listener models.Listener, logger logger.Logger, errorLogger logger.Logger) (dcp.Dcp, error) {
 	switch v := cfg.(type) {
 	case dcpClientConfig.Dcp:
-		return godcpclient.NewDcpWithLoggers(v, listener, logger, errorLogger)
+		return dcp.NewDcpWithLoggers(v, listener, logger, errorLogger)
 	case string:
-		return godcpclient.NewDcpWithLoggers(v, listener, logger, errorLogger)
+		return dcp.NewDcpWithLoggers(v, listener, logger, errorLogger)
 	default:
 		return nil, errors.New("invalid config")
 	}

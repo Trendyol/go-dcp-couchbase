@@ -3,7 +3,7 @@ module github.com/Trendyol/go-dcp-couchbase
 go 1.20
 
 require (
-	github.com/Trendyol/go-dcp-client v0.0.62
+	github.com/Trendyol/go-dcp v0.0.65
 	github.com/couchbase/gocbcore/v10 v10.2.3
 )
 

@@ -4,27 +4,27 @@ import (
 	"github.com/Trendyol/go-dcp-couchbase"
 	"time"
 
-	dcpClientConfig "github.com/Trendyol/go-dcp-client/config"
-	"github.com/Trendyol/go-dcp-client/logger"
 	"github.com/Trendyol/go-dcp-couchbase/config"
+	dcpConfig "github.com/Trendyol/go-dcp/config"
+	"github.com/Trendyol/go-dcp/logger"
 )
 
 func main() {
 	c, err := dcpcouchbase.NewConnector(&config.Config{
-		Dcp: dcpClientConfig.Dcp{
+		Dcp: dcpConfig.Dcp{
 			Hosts:      []string{"localhost:8091"},
 			Username:   "user",
-			Password:   "123456",
+			Password:   "password",
 			BucketName: "dcp-test",
-			Dcp: dcpClientConfig.ExternalDcp{
-				Group: dcpClientConfig.DCPGroup{
+			Dcp: dcpConfig.ExternalDcp{
+				Group: dcpConfig.DCPGroup{
 					Name: "groupName",
-					Membership: dcpClientConfig.DCPGroupMembership{
+					Membership: dcpConfig.DCPGroupMembership{
 						RebalanceDelay: 3 * time.Second,
 					},
 				},
 			},
-			Metadata: dcpClientConfig.Metadata{
+			Metadata: dcpConfig.Metadata{
 				Config: map[string]string{
 					"bucket":     "dcp-test-meta",
 					"scope":      "_default",
