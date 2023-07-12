@@ -26,7 +26,7 @@ func main() {
 			},
 			Metadata: dcpConfig.Metadata{
 				Config: map[string]string{
-					"bucket":     "dcp-test",
+					"bucket":     "dcp-test-meta",
 					"scope":      "_default",
 					"collection": "_default",
 				},
@@ -37,7 +37,7 @@ func main() {
 		Couchbase: config.Couchbase{
 			Hosts:            []string{"localhost:8091"},
 			Username:         "user",
-			Password:         "password",
+			Password:         "123456",
 			BucketName:       "dcp-test-backup",
 			BatchSizeLimit:   10,
 			RequestTimeoutMs: 1000 * 10,
