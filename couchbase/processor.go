@@ -5,6 +5,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/couchbase/gocbcore/v10/memd"
+
 	"github.com/Trendyol/go-dcp/couchbase"
 
 	"github.com/Trendyol/go-dcp-couchbase/config"
@@ -105,12 +107,18 @@ func (b *Processor) bulkRequest() error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(b.requestTimeoutMs)*time.Millisecond)
 	defer cancel()
 	for _, v := range b.batch {
-		if v.Type == Index {
+		switch {
+		case v.Type == Set:
 			err := couchbase.CreateDocument(ctx, b.client.GetAgent(), b.scopeName, b.collectionName, v.ID, v.Source, 0, 0)
 			if err != nil {
 				return err
 			}
-		} else {
+		case v.Type == MutateIn:
+			err := couchbase.CreatePath(ctx, b.client.GetAgent(), b.scopeName, b.collectionName, v.ID, v.Path, v.Source, memd.SubdocDocFlagMkDoc)
+			if err != nil {
+				return err
+			}
+		default:
 			err := couchbase.DeleteDocument(ctx, b.client.GetAgent(), b.scopeName, b.collectionName, v.ID)
 			var keyValueErr *gocbcore.KeyValueError
 			if errors.As(err, &keyValueErr) {

@@ -3,14 +3,16 @@ package couchbase
 type CbAction string
 
 const (
-	Index  CbAction = "Index"
-	Delete CbAction = "Delete"
+	Set      CbAction = "Set"
+	Delete   CbAction = "Delete"
+	MutateIn CbAction = "MutateIn"
 )
 
 type CBActionDocument struct {
 	Type   CbAction
 	Source []byte
 	ID     []byte
+	Path   []byte
 }
 
 func NewDeleteAction(key []byte) CBActionDocument {
@@ -20,10 +22,19 @@ func NewDeleteAction(key []byte) CBActionDocument {
 	}
 }
 
-func NewIndexAction(key []byte, source []byte) CBActionDocument {
+func NewSetAction(key []byte, source []byte) CBActionDocument {
 	return CBActionDocument{
 		ID:     key,
 		Source: source,
-		Type:   Index,
+		Type:   Set,
+	}
+}
+
+func NewMutateInAction(key []byte, path []byte, source []byte) CBActionDocument {
+	return CBActionDocument{
+		ID:     key,
+		Source: source,
+		Type:   MutateIn,
+		Path:   path,
 	}
 }

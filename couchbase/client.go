@@ -3,7 +3,6 @@ package couchbase
 import (
 	"github.com/Trendyol/go-dcp-couchbase/config"
 	"github.com/Trendyol/go-dcp/couchbase"
-
 	"github.com/Trendyol/go-dcp/logger"
 	"github.com/couchbase/gocbcore/v10"
 )
