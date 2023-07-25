@@ -1,15 +1,24 @@
 package couchbase
 
 import (
+	"context"
+
 	"github.com/Trendyol/go-dcp-couchbase/config"
 	"github.com/Trendyol/go-dcp/couchbase"
 	"github.com/Trendyol/go-dcp/logger"
 	"github.com/couchbase/gocbcore/v10"
+	"github.com/couchbase/gocbcore/v10/memd"
 )
 
 type Client interface {
 	Connect() error
 	GetAgent() *gocbcore.Agent
+	DeletePath(ctx context.Context,
+		scopeName string,
+		collectionName string,
+		id []byte,
+		path []byte,
+	) error
 	Close()
 }
 
@@ -36,6 +45,46 @@ func (s *client) Connect() error {
 
 func (s *client) GetAgent() *gocbcore.Agent {
 	return s.agent
+}
+
+func (s *client) DeletePath(ctx context.Context,
+	scopeName string,
+	collectionName string,
+	id []byte,
+	path []byte,
+) error {
+	opm := couchbase.NewAsyncOp(ctx)
+
+	deadline, _ := ctx.Deadline()
+
+	ch := make(chan error)
+
+	op, err := s.agent.MutateIn(gocbcore.MutateInOptions{
+		Key: id,
+		Ops: []gocbcore.SubDocOp{
+			{
+				Op:   memd.SubDocOpDelete,
+				Path: string(path),
+			},
+		},
+		Deadline:       deadline,
+		ScopeName:      scopeName,
+		CollectionName: collectionName,
+	}, func(result *gocbcore.MutateInResult, err error) {
+		opm.Resolve()
+
+		ch <- err
+	})
+
+	err = opm.Wait(op, err)
+
+	if err != nil {
+		return err
+	}
+
+	err = <-ch
+
+	return err
 }
 
 func (s *client) Close() {

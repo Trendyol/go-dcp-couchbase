@@ -3,9 +3,10 @@ package couchbase
 type CbAction string
 
 const (
-	Set      CbAction = "Set"
-	Delete   CbAction = "Delete"
-	MutateIn CbAction = "MutateIn"
+	Set        CbAction = "Set"
+	Delete     CbAction = "Delete"
+	MutateIn   CbAction = "MutateIn"
+	DeletePath CbAction = "DeletePath"
 )
 
 type CBActionDocument struct {
@@ -36,5 +37,13 @@ func NewMutateInAction(key []byte, path []byte, source []byte) CBActionDocument 
 		Source: source,
 		Type:   MutateIn,
 		Path:   path,
+	}
+}
+
+func NewDeletePathAction(key []byte, path []byte) CBActionDocument {
+	return CBActionDocument{
+		ID:   key,
+		Type: DeletePath,
+		Path: path,
 	}
 }

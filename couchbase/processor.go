@@ -18,6 +18,7 @@ import (
 
 type Processor struct {
 	client              Client
+	agent               *gocbcore.Agent
 	logger              logger.Logger
 	errorLogger         logger.Logger
 	batchTicker         *time.Ticker
@@ -45,6 +46,7 @@ func NewProcessor(config *config.Config,
 
 	processor := &Processor{
 		client:              client,
+		agent:               client.GetAgent(),
 		batchTicker:         time.NewTicker(config.Couchbase.BatchTickerDuration),
 		batchSizeLimit:      config.Couchbase.BatchSizeLimit,
 		batchByteSizeLimit:  config.Couchbase.BatchByteSizeLimit,
@@ -103,30 +105,40 @@ func (b *Processor) AddActions(
 	}
 }
 
+func checkKeyValueError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	var keyValueErr *gocbcore.KeyValueError
+	if errors.As(err, &keyValueErr) {
+		return nil
+	}
+
+	return err
+}
+
 func (b *Processor) bulkRequest() error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(b.requestTimeoutMs)*time.Millisecond)
 	defer cancel()
 	for _, v := range b.batch {
 		switch {
 		case v.Type == Set:
-			err := couchbase.CreateDocument(ctx, b.client.GetAgent(), b.scopeName, b.collectionName, v.ID, v.Source, 0, 0)
+			err := couchbase.CreateDocument(ctx, b.agent, b.scopeName, b.collectionName, v.ID, v.Source, 0, 0)
 			if err != nil {
 				return err
 			}
 		case v.Type == MutateIn:
-			err := couchbase.CreatePath(ctx, b.client.GetAgent(), b.scopeName, b.collectionName, v.ID, v.Path, v.Source, memd.SubdocDocFlagMkDoc)
+			err := couchbase.CreatePath(ctx, b.agent, b.scopeName, b.collectionName, v.ID, v.Path, v.Source, memd.SubdocDocFlagMkDoc)
 			if err != nil {
 				return err
 			}
+		case v.Type == DeletePath:
+			err := b.client.DeletePath(ctx, b.scopeName, b.collectionName, v.ID, v.Path)
+			return checkKeyValueError(err)
 		default:
-			err := couchbase.DeleteDocument(ctx, b.client.GetAgent(), b.scopeName, b.collectionName, v.ID)
-			var keyValueErr *gocbcore.KeyValueError
-			if errors.As(err, &keyValueErr) {
-				return nil
-			}
-			if err != nil {
-				return err
-			}
+			err := couchbase.DeleteDocument(ctx, b.agent, b.scopeName, b.collectionName, v.ID)
+			return checkKeyValueError(err)
 		}
 	}
 	return nil
