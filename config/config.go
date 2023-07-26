@@ -24,7 +24,7 @@ type Couchbase struct {
 	ConnectionTimeout    time.Duration
 	BatchSizeLimit       int
 	BatchByteSizeLimit   int
-	RequestTimeoutMs     int
+	RequestTimeout       time.Duration
 	SecureConnection     bool
 }
 
@@ -70,7 +70,7 @@ func (c *Config) applyDefaultProcess() {
 		c.Couchbase.BatchByteSizeLimit = 10485760
 	}
 
-	if c.Couchbase.RequestTimeoutMs == 0 {
-		c.Couchbase.RequestTimeoutMs = 1000 * 3
+	if c.Couchbase.RequestTimeout == 0 {
+		c.Couchbase.RequestTimeout = 3 * time.Second
 	}
 }

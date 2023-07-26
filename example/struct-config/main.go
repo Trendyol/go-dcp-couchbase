@@ -35,12 +35,12 @@ func main() {
 			Debug: true,
 		},
 		Couchbase: config.Couchbase{
-			Hosts:            []string{"localhost:8091"},
-			Username:         "user",
-			Password:         "123456",
-			BucketName:       "dcp-test-backup",
-			BatchSizeLimit:   10,
-			RequestTimeoutMs: 1000 * 10,
+			Hosts:          []string{"localhost:8091"},
+			Username:       "user",
+			Password:       "password",
+			BucketName:     "dcp-test-backup",
+			BatchSizeLimit: 10,
+			RequestTimeout: 10 * time.Second,
 		},
 	}, dcpcouchbase.DefaultMapper, logger.Log, logger.ErrorLog)
 	if err != nil {

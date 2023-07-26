@@ -3,11 +3,10 @@ package couchbase
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/couchbase/gocbcore/v10/memd"
-
-	"github.com/Trendyol/go-dcp/couchbase"
 
 	"github.com/Trendyol/go-dcp-couchbase/config"
 
@@ -18,6 +17,7 @@ import (
 
 type Processor struct {
 	client              Client
+	metric              *Metric
 	agent               *gocbcore.Agent
 	logger              logger.Logger
 	errorLogger         logger.Logger
@@ -27,10 +27,15 @@ type Processor struct {
 	collectionName      string
 	batch               []CBActionDocument
 	batchSize           int
-	requestTimeoutMs    int
+	requestTimeout      time.Duration
 	batchTickerDuration time.Duration
 	batchByteSizeLimit  int
 	batchSizeLimit      int
+}
+
+type Metric struct {
+	ProcessLatencyMs            int64
+	BulkRequestProcessLatencyMs int64
 }
 
 func NewProcessor(config *config.Config,
@@ -51,12 +56,13 @@ func NewProcessor(config *config.Config,
 		batchSizeLimit:      config.Couchbase.BatchSizeLimit,
 		batchByteSizeLimit:  config.Couchbase.BatchByteSizeLimit,
 		batchTickerDuration: config.Couchbase.BatchTickerDuration,
-		requestTimeoutMs:    config.Couchbase.RequestTimeoutMs,
+		requestTimeout:      config.Couchbase.RequestTimeout,
 		scopeName:           config.Couchbase.ScopeName,
 		collectionName:      config.Couchbase.CollectionName,
 		dcpCheckpointCommit: dcpCheckpointCommit,
 		logger:              logger,
 		errorLogger:         errorLogger,
+		metric:              &Metric{},
 	}
 
 	return processor, nil
@@ -77,10 +83,7 @@ func (b *Processor) Close() {
 
 func (b *Processor) flushMessages() {
 	if len(b.batch) > 0 {
-		err := b.bulkRequest()
-		if err != nil {
-			panic(err)
-		}
+		b.bulkRequest()
 		b.batchTicker.Reset(b.batchTickerDuration)
 		b.batch = b.batch[:0]
 		b.batchSize = 0
@@ -91,55 +94,80 @@ func (b *Processor) flushMessages() {
 
 func (b *Processor) AddActions(
 	ctx *models.ListenerContext,
-	_ time.Time,
+	eventTime time.Time,
 	actions []CBActionDocument,
-	_ string,
 ) {
 	b.batch = append(b.batch, actions...)
 	b.batchSize += len(actions)
 	ctx.Ack()
 
-	// TODO: metric
+	b.metric.ProcessLatencyMs = time.Since(eventTime).Milliseconds()
 	if b.batchSize >= b.batchSizeLimit || len(b.batch) >= b.batchByteSizeLimit {
 		b.flushMessages()
 	}
 }
 
-func checkKeyValueError(err error) error {
+func (b *Processor) GetMetric() *Metric {
+	return b.metric
+}
+
+func panicOrGo(err error, wg *sync.WaitGroup) {
 	if err == nil {
-		return nil
+		wg.Done()
+		return
 	}
 
 	var keyValueErr *gocbcore.KeyValueError
 	if errors.As(err, &keyValueErr) {
-		return nil
+		wg.Done()
+		return
 	}
 
-	return err
+	panic(err)
 }
 
-func (b *Processor) bulkRequest() error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(b.requestTimeoutMs)*time.Millisecond)
+func (b *Processor) bulkRequest() {
+	startedTime := time.Now()
+
+	ctx, cancel := context.WithTimeout(context.Background(), b.requestTimeout)
 	defer cancel()
+
+	var wg sync.WaitGroup
+	wg.Add(len(b.batch))
+
 	for _, v := range b.batch {
+		var err error
+
 		switch {
 		case v.Type == Set:
-			err := couchbase.CreateDocument(ctx, b.agent, b.scopeName, b.collectionName, v.ID, v.Source, 0, 0)
-			if err != nil {
-				return err
-			}
+			err = b.client.CreateDocument(ctx, b.scopeName, b.collectionName, v.ID, v.Source, 0, 0,
+				func(result *gocbcore.StoreResult, err error) {
+					panicOrGo(err, &wg)
+				})
 		case v.Type == MutateIn:
-			err := couchbase.CreatePath(ctx, b.agent, b.scopeName, b.collectionName, v.ID, v.Path, v.Source, memd.SubdocDocFlagMkDoc)
-			if err != nil {
-				return err
-			}
+			err = b.client.CreatePath(ctx, b.scopeName, b.collectionName, v.ID, v.Path, v.Source, memd.SubdocDocFlagMkDoc,
+				func(result *gocbcore.MutateInResult, err error) {
+					panicOrGo(err, &wg)
+				})
 		case v.Type == DeletePath:
-			err := b.client.DeletePath(ctx, b.scopeName, b.collectionName, v.ID, v.Path)
-			return checkKeyValueError(err)
+			err = b.client.DeletePath(ctx, b.scopeName, b.collectionName, v.ID, v.Path,
+				func(result *gocbcore.MutateInResult, err error) {
+					panicOrGo(err, &wg)
+				})
+		case v.Type == Delete:
+			err = b.client.DeleteDocument(ctx, b.scopeName, b.collectionName, v.ID,
+				func(result *gocbcore.DeleteResult, err error) {
+					panicOrGo(err, &wg)
+				})
 		default:
-			err := couchbase.DeleteDocument(ctx, b.agent, b.scopeName, b.collectionName, v.ID)
-			return checkKeyValueError(err)
+			b.errorLogger.Printf("Unexpected action type: %v", v.Type)
+		}
+
+		if err != nil {
+			panic(err)
 		}
 	}
-	return nil
+
+	wg.Wait()
+	b.metric.BulkRequestProcessLatencyMs = time.Since(startedTime).Milliseconds()
 }

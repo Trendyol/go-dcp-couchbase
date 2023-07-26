@@ -13,11 +13,36 @@ import (
 type Client interface {
 	Connect() error
 	GetAgent() *gocbcore.Agent
+	CreatePath(ctx context.Context,
+		scopeName string,
+		collectionName string,
+		id []byte,
+		path []byte,
+		value []byte,
+		flags memd.SubdocDocFlag,
+		cb gocbcore.MutateInCallback,
+	) error
+	CreateDocument(ctx context.Context,
+		scopeName string,
+		collectionName string,
+		id []byte,
+		value []byte,
+		flags uint32,
+		expiry uint32,
+		cb gocbcore.StoreCallback,
+	) error
+	DeleteDocument(ctx context.Context,
+		scopeName string,
+		collectionName string,
+		id []byte,
+		cb gocbcore.DeleteCallback,
+	) error
 	DeletePath(ctx context.Context,
 		scopeName string,
 		collectionName string,
 		id []byte,
 		path []byte,
+		cb gocbcore.MutateInCallback,
 	) error
 	Close()
 }
@@ -47,19 +72,87 @@ func (s *client) GetAgent() *gocbcore.Agent {
 	return s.agent
 }
 
+func (s *client) CreatePath(ctx context.Context,
+	scopeName string,
+	collectionName string,
+	id []byte,
+	path []byte,
+	value []byte,
+	flags memd.SubdocDocFlag,
+	cb gocbcore.MutateInCallback,
+) error {
+	deadline, _ := ctx.Deadline()
+
+	_, err := s.agent.MutateIn(gocbcore.MutateInOptions{
+		Key:   id,
+		Flags: flags,
+		Ops: []gocbcore.SubDocOp{
+			{
+				Op:    memd.SubDocOpDictSet,
+				Value: value,
+				Path:  string(path),
+			},
+		},
+		Deadline:       deadline,
+		ScopeName:      scopeName,
+		CollectionName: collectionName,
+	}, cb)
+
+	return err
+}
+
+func (s *client) CreateDocument(ctx context.Context,
+	scopeName string,
+	collectionName string,
+	id []byte,
+	value []byte,
+	flags uint32,
+	expiry uint32,
+	cb gocbcore.StoreCallback,
+) error {
+	deadline, _ := ctx.Deadline()
+
+	_, err := s.agent.Set(gocbcore.SetOptions{
+		Key:            id,
+		Value:          value,
+		Flags:          flags,
+		Deadline:       deadline,
+		Expiry:         expiry,
+		ScopeName:      scopeName,
+		CollectionName: collectionName,
+	}, cb)
+
+	return err
+}
+
+func (s *client) DeleteDocument(ctx context.Context,
+	scopeName string,
+	collectionName string,
+	id []byte,
+	cb gocbcore.DeleteCallback,
+) error {
+	deadline, _ := ctx.Deadline()
+
+	_, err := s.agent.Delete(gocbcore.DeleteOptions{
+		Key:            id,
+		Deadline:       deadline,
+		ScopeName:      scopeName,
+		CollectionName: collectionName,
+	}, cb)
+
+	return err
+}
+
 func (s *client) DeletePath(ctx context.Context,
 	scopeName string,
 	collectionName string,
 	id []byte,
 	path []byte,
+	cb gocbcore.MutateInCallback,
 ) error {
-	opm := couchbase.NewAsyncOp(ctx)
-
 	deadline, _ := ctx.Deadline()
 
-	ch := make(chan error)
-
-	op, err := s.agent.MutateIn(gocbcore.MutateInOptions{
+	_, err := s.agent.MutateIn(gocbcore.MutateInOptions{
 		Key: id,
 		Ops: []gocbcore.SubDocOp{
 			{
@@ -70,19 +163,7 @@ func (s *client) DeletePath(ctx context.Context,
 		Deadline:       deadline,
 		ScopeName:      scopeName,
 		CollectionName: collectionName,
-	}, func(result *gocbcore.MutateInResult, err error) {
-		opm.Resolve()
-
-		ch <- err
-	})
-
-	err = opm.Wait(op, err)
-
-	if err != nil {
-		return err
-	}
-
-	err = <-ch
+	}, cb)
 
 	return err
 }

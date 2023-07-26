@@ -3,6 +3,8 @@ package dcpcouchbase
 import (
 	"errors"
 
+	"github.com/Trendyol/go-dcp-couchbase/metric"
+
 	"github.com/Trendyol/go-dcp-couchbase/config"
 	"github.com/Trendyol/go-dcp-couchbase/couchbase"
 
@@ -59,7 +61,7 @@ func (c *connector) listener(ctx *models.ListenerContext) {
 		return
 	}
 
-	c.processor.AddActions(ctx, e.EventTime, actions, e.CollectionName)
+	c.processor.AddActions(ctx, e.EventTime, actions)
 }
 
 func createDcp(cfg any, listener models.Listener, logger logger.Logger, errorLogger logger.Logger) (dcp.Dcp, error) {
@@ -115,6 +117,9 @@ func NewConnector(cf any, mapper Mapper, logger logger.Logger, errorLogger logge
 	if err != nil {
 		return nil, err
 	}
+
+	metricCollector := metric.NewMetricCollector(connector.processor)
+	dcp.SetMetricCollectors(metricCollector)
 
 	return connector, nil
 }

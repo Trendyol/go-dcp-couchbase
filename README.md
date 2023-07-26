@@ -16,56 +16,61 @@ Couchbase bucket in near real-time.
 * **Easily manageable configurations**.
 
 ## Example
+
 [Struct Config](example/struct-config/main.go)
+
 ```go
-func defaultMapper(event couchbase.Event) []couchbase.CBActionDocument {
-    if event.IsMutated {
-        return []couchbase.CBActionDocument{couchbase.NewIndexAction(event.Key, event.Value)}
-    }
-    return []couchbase.CBActionDocument{couchbase.NewDeleteAction(event.Key)}
-}
+package main
+
+import (
+	"github.com/Trendyol/go-dcp-couchbase"
+	"time"
+
+	"github.com/Trendyol/go-dcp-couchbase/config"
+	dcpConfig "github.com/Trendyol/go-dcp/config"
+	"github.com/Trendyol/go-dcp/logger"
+)
 
 func main() {
-    c, err := dcpcouchbase.NewConnector(&config.Config{
-        Dcp: dcpClientConfig.Dcp{
-            Hosts:      []string{"localhost:8091"},
-            Username:   "user",
-            Password:   "123456",
-            BucketName: "dcp-test",
-            Dcp: dcpClientConfig.ExternalDcp{
-                Group: dcpClientConfig.DCPGroup{
-                    Name: "groupName",
-                    Membership: dcpClientConfig.DCPGroupMembership{
-                        RebalanceDelay: 3 * time.Second,
-                    },
-                },
-            },
-            Metadata: dcpClientConfig.Metadata{
-                Config: map[string]string{
-                    "bucket":     "dcp-test-meta",
-                    "scope":      "_default",
-                    "collection": "_default",
-                },
-                Type: "couchbase",
-            },
-            Debug: true
-        },
-        Couchbase: config.Couchbase{
-            Hosts:            []string{"localhost:8091"},
-            Username:         "user",
-            Password:         "password",
-            BucketName:       "dcp-test-backup",
-            BatchSizeLimit:   10,
-            RequestTimeoutMs: 1000 * 10,
-        },
-    }, defaultMapper, logger.Log, logger.ErrorLog)
+	c, err := dcpcouchbase.NewConnector(&config.Config{
+		Dcp: dcpConfig.Dcp{
+			Hosts:      []string{"localhost:8091"},
+			Username:   "user",
+			Password:   "password",
+			BucketName: "dcp-test",
+			Dcp: dcpConfig.ExternalDcp{
+				Group: dcpConfig.DCPGroup{
+					Name: "groupName",
+					Membership: dcpConfig.DCPGroupMembership{
+						RebalanceDelay: 3 * time.Second,
+					},
+				},
+			},
+			Metadata: dcpConfig.Metadata{
+				Config: map[string]string{
+					"bucket":     "dcp-test-meta",
+					"scope":      "_default",
+					"collection": "_default",
+				},
+				Type: "couchbase",
+			},
+			Debug: true,
+		},
+		Couchbase: config.Couchbase{
+			Hosts:          []string{"localhost:8091"},
+			Username:       "user",
+			Password:       "password",
+			BucketName:     "dcp-test-backup",
+			BatchSizeLimit: 10,
+			RequestTimeout: 10 * time.Second,
+		},
+	}, dcpcouchbase.DefaultMapper, logger.Log, logger.ErrorLog)
+	if err != nil {
+		panic(err)
+	}
 
-    if err != nil {
-        panic(err)
-    }
-    
-    defer c.Close()
-    c.Start()
+	defer c.Close()
+	c.Start()
 }
 
 ```
@@ -78,16 +83,16 @@ Check out on [go-dcp](https://github.com/Trendyol/go-dcp#configuration)
 
 ### Couchbase Specific Configuration
 
-| Variable                           | Type          | Required | Default  | Description                                                                                         |                                                           
-|------------------------------------|---------------|----------|----------|-----------------------------------------------------------------------------------------------------|
-| `Hosts`                            | []string      | yes      |          | Couchbase connection urls                                                                           |
-| `BucketName`                       | string        | yes      |          | Defines Couchbase bucket name                                                                       |
-| `ScopeName`                        | string        | no       | _default | Defines Couchbase scope name                                                                        |
-| `CollectionName`                   | string        | no       | _default | Defines Couchbase collection name                                                                   |
-| `BatchSizeLimit`                   | int           | no       | 1000     | Maximum message count for batch, if exceed flush will be triggered.                                 |
-| `BatchTickerDuration`              | time.Duration | no       | 10s      | Batch is being flushed automatically at specific time intervals for long waiting messages in batch. |
-| `BatchByteSizeLimit`               | int           | no       | 10485760 | Maximum size(byte) for batch, if exceed flush will be triggered.                                    |
-| `RequestTimeoutMs`                 | int           | no       | 3000     | Maximum request waiting time. Value type milliseconds.                                              |
+| Variable              | Type          | Required | Default  | Description                                                                                         |                                                           
+|-----------------------|---------------|----------|----------|-----------------------------------------------------------------------------------------------------|
+| `Hosts`               | []string      | yes      |          | Couchbase connection urls                                                                           |
+| `BucketName`          | string        | yes      |          | Defines Couchbase bucket name                                                                       |
+| `ScopeName`           | string        | no       | _default | Defines Couchbase scope name                                                                        |
+| `CollectionName`      | string        | no       | _default | Defines Couchbase collection name                                                                   |
+| `BatchSizeLimit`      | int           | no       | 1000     | Maximum message count for batch, if exceed flush will be triggered.                                 |
+| `BatchTickerDuration` | time.Duration | no       | 10s      | Batch is being flushed automatically at specific time intervals for long waiting messages in batch. |
+| `BatchByteSizeLimit`  | int           | no       | 10485760 | Maximum size(byte) for batch, if exceed flush will be triggered.                                    |
+| `RequestTimeout`      | int           | no       | 3s       | Maximum request waiting time. Value type milliseconds.                                              |
 
 ## Exposed metrics
 
