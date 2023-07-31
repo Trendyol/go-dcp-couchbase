@@ -117,6 +117,10 @@ func NewConnector(cf any, mapper Mapper, logger logger.Logger, errorLogger logge
 	if err != nil {
 		return nil, err
 	}
+	connector.dcp.SetEventHandler(
+		&DcpEventHandler{
+			processor: connector.processor,
+		})
 
 	metricCollector := metric.NewMetricCollector(connector.processor)
 	dcp.SetMetricCollectors(metricCollector)
