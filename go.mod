@@ -3,8 +3,9 @@ module github.com/Trendyol/go-dcp-couchbase
 go 1.20
 
 require (
-	github.com/Trendyol/go-dcp v0.0.66
+	github.com/Trendyol/go-dcp v0.0.69
 	github.com/couchbase/gocbcore/v10 v10.2.3
+	github.com/prometheus/client_golang v1.15.1
 )
 
 require (
@@ -40,7 +41,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/philhofer/fwd v1.1.2 // indirect
-	github.com/prometheus/client_golang v1.15.1 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
