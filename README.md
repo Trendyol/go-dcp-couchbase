@@ -15,6 +15,14 @@ Couchbase bucket in near real-time.
   Static, see [examples](https://github.com/Trendyol/go-dcp#examples)).
 * **Easily manageable configurations**.
 
+## Concepts
+General Concept
+![general](docs/couchbase-dcp.png)
+
+Merge at target bucket
+![merge-buckets](docs/couchbase-merge-buckets.png)
+
+
 ## Example
 
 [Struct Config](example/struct-config/main.go)
