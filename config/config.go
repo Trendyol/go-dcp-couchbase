@@ -29,8 +29,8 @@ type Couchbase struct {
 }
 
 type Config struct {
-	Couchbase Couchbase
-	Dcp       config.Dcp
+	Couchbase Couchbase  `yaml:"couchbase"`
+	Dcp       config.Dcp `yaml:",inline"`
 }
 
 func (c *Config) ApplyDefaults() {

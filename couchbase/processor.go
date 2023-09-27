@@ -19,8 +19,6 @@ type Processor struct {
 	client              Client
 	metric              *Metric
 	agent               *gocbcore.Agent
-	logger              logger.Logger
-	errorLogger         logger.Logger
 	batchTicker         *time.Ticker
 	dcpCheckpointCommit func()
 	scopeName           string
@@ -41,8 +39,6 @@ type Metric struct {
 }
 
 func NewProcessor(config *config.Config,
-	logger logger.Logger,
-	errorLogger logger.Logger,
 	dcpCheckpointCommit func(),
 ) (*Processor, error) {
 	client := NewClient(&config.Couchbase)
@@ -62,8 +58,6 @@ func NewProcessor(config *config.Config,
 		scopeName:           config.Couchbase.ScopeName,
 		collectionName:      config.Couchbase.CollectionName,
 		dcpCheckpointCommit: dcpCheckpointCommit,
-		logger:              logger,
-		errorLogger:         errorLogger,
 		metric:              &Metric{},
 	}
 
@@ -186,7 +180,7 @@ func (b *Processor) bulkRequest() {
 					panicOrGo(err, &wg)
 				})
 		default:
-			b.errorLogger.Printf("Unexpected action type: %v", v.Type)
+			logger.Log.Error("Unexpected action type: %v", v.Type)
 		}
 
 		if err != nil {

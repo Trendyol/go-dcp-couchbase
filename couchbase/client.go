@@ -64,7 +64,7 @@ func (s *client) Connect() error {
 
 	s.agent = agent
 
-	logger.Log.Printf("connected to %s, bucket: %s", s.config.Hosts, s.config.BucketName)
+	logger.Log.Info("connected to %s, bucket: %s", s.config.Hosts, s.config.BucketName)
 	return nil
 }
 
@@ -170,7 +170,7 @@ func (s *client) DeletePath(ctx context.Context,
 
 func (s *client) Close() {
 	_ = s.agent.Close()
-	logger.Log.Printf("connections closed %s", s.config.Hosts)
+	logger.Log.Info("connections closed %s", s.config.Hosts)
 }
 
 func NewClient(config *config.Couchbase) Client {
