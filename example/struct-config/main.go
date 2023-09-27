@@ -6,7 +6,6 @@ import (
 
 	"github.com/Trendyol/go-dcp-couchbase/config"
 	dcpConfig "github.com/Trendyol/go-dcp/config"
-	"github.com/Trendyol/go-dcp/logger"
 )
 
 func main() {
@@ -42,7 +41,7 @@ func main() {
 			BatchSizeLimit: 10,
 			RequestTimeout: 10 * time.Second,
 		},
-	}, dcpcouchbase.DefaultMapper, logger.Log, logger.ErrorLog)
+	}, dcpcouchbase.DefaultMapper)
 	if err != nil {
 		panic(err)
 	}

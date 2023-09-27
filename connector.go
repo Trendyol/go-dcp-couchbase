@@ -3,10 +3,11 @@ package dcpcouchbase
 import (
 	"errors"
 
-	"github.com/Trendyol/go-dcp-couchbase/metric"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Trendyol/go-dcp-couchbase/config"
 	"github.com/Trendyol/go-dcp-couchbase/couchbase"
+	"github.com/Trendyol/go-dcp-couchbase/metric"
 
 	"github.com/Trendyol/go-dcp"
 	dcpClientConfig "github.com/Trendyol/go-dcp/config"
@@ -20,12 +21,10 @@ type Connector interface {
 }
 
 type connector struct {
-	dcp         dcp.Dcp
-	config      *config.Config
-	mapper      Mapper
-	logger      logger.Logger
-	errorLogger logger.Logger
-	processor   *couchbase.Processor
+	dcp       dcp.Dcp
+	config    *config.Config
+	mapper    Mapper
+	processor *couchbase.Processor
 }
 
 func (c *connector) Start() {
@@ -64,18 +63,18 @@ func (c *connector) listener(ctx *models.ListenerContext) {
 	c.processor.AddActions(ctx, e.EventTime, actions)
 }
 
-func createDcp(cfg any, listener models.Listener, logger logger.Logger, errorLogger logger.Logger) (dcp.Dcp, error) {
+func createDcp(cfg any, listener models.Listener) (dcp.Dcp, error) {
 	switch v := cfg.(type) {
 	case dcpClientConfig.Dcp:
-		return dcp.NewDcpWithLoggers(v, listener, logger, errorLogger)
+		return dcp.NewDcp(v, listener)
 	case string:
-		return dcp.NewDcpWithLoggers(v, listener, logger, errorLogger)
+		return dcp.NewDcp(v, listener)
 	default:
 		return nil, errors.New("invalid config")
 	}
 }
 
-func NewConnector(cf any, mapper Mapper, logger logger.Logger, errorLogger logger.Logger) (Connector, error) {
+func NewConnector(cf any, mapper Mapper) (Connector, error) {
 	cfg, err := newConfig(cf)
 	if err != nil {
 		return nil, err
@@ -83,19 +82,17 @@ func NewConnector(cf any, mapper Mapper, logger logger.Logger, errorLogger logge
 	cfg.ApplyDefaults()
 
 	connector := &connector{
-		mapper:      mapper,
-		config:      cfg,
-		logger:      logger,
-		errorLogger: errorLogger,
+		mapper: mapper,
+		config: cfg,
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	dcp, err := createDcp(cfg.Dcp, connector.listener, logger, errorLogger)
+	dcp, err := createDcp(cfg.Dcp, connector.listener)
 	if err != nil {
-		connector.errorLogger.Printf("dcp error: %v", err)
+		logger.Log.Error("dcp error: %v", err)
 		return nil, err
 	}
 
@@ -105,8 +102,6 @@ func NewConnector(cf any, mapper Mapper, logger logger.Logger, errorLogger logge
 	connector.dcp = dcp
 	processor, err := couchbase.NewProcessor(
 		cfg,
-		connector.logger,
-		connector.errorLogger,
 		dcp.Commit,
 	)
 	if err != nil {
@@ -126,6 +121,14 @@ func NewConnector(cf any, mapper Mapper, logger logger.Logger, errorLogger logge
 	dcp.SetMetricCollectors(metricCollector)
 
 	return connector, nil
+}
+
+func NewConnectorWithLogger(cf any, mapper Mapper, logrus *logrus.Logger) (Connector, error) {
+	logger.Log = &logger.Loggers{
+		Logrus: logrus,
+	}
+
+	return NewConnector(cf, mapper)
 }
 
 func newConfig(cf any) (*config.Config, error) {
