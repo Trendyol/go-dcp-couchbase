@@ -6,6 +6,7 @@ require (
 	github.com/Trendyol/go-dcp v1.1.0
 	github.com/couchbase/gocbcore/v10 v10.2.6
 	github.com/prometheus/client_golang v1.16.0
+	github.com/sirupsen/logrus v1.9.0
 )
 
 require (
