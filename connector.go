@@ -2,6 +2,8 @@ package dcpcouchbase
 
 import (
 	"errors"
+	"gopkg.in/yaml.v3"
+	"os"
 
 	"github.com/sirupsen/logrus"
 
@@ -137,7 +139,21 @@ func newConfig(cf any) (*config.Config, error) {
 		return v, nil
 	case config.Config:
 		return &v, nil
+	case string:
+		return newConnectorConfigFromPath(v)
 	default:
 		return nil, errors.New("invalid config")
 	}
+}
+func newConnectorConfigFromPath(path string) (*config.Config, error) {
+	file, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var c config.Config
+	err = yaml.Unmarshal(file, &c)
+	if err != nil {
+		return nil, err
+	}
+	return &c, nil
 }
