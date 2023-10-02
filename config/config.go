@@ -12,25 +12,25 @@ const (
 )
 
 type Couchbase struct {
-	RootCAPath           string
-	Password             string
-	BucketName           string
-	ScopeName            string
-	CollectionName       string
-	Username             string
-	Hosts                []string
-	ConnectionBufferSize uint
-	BatchTickerDuration  time.Duration
-	ConnectionTimeout    time.Duration
-	BatchSizeLimit       int
-	BatchByteSizeLimit   int
-	RequestTimeout       time.Duration
-	SecureConnection     bool
+	RootCAPath           string        `yaml:"rootCAPath"`
+	Password             string        `yaml:"password"`
+	BucketName           string        `yaml:"bucketName"`
+	ScopeName            string        `yaml:"scopeName"`
+	CollectionName       string        `yaml:"collectionName"`
+	Username             string        `yaml:"username"`
+	Hosts                []string      `yaml:"hosts"`
+	ConnectionBufferSize uint          `yaml:"connectionBufferSize"`
+	BatchTickerDuration  time.Duration `yaml:"batchTickerDuration"`
+	ConnectionTimeout    time.Duration `yaml:"connectionTimeout"`
+	BatchSizeLimit       int           `yaml:"batchSizeLimit"`
+	BatchByteSizeLimit   int           `yaml:"batchByteSizeLimit"`
+	RequestTimeout       time.Duration `yaml:"requestTimeout"`
+	SecureConnection     bool          `yaml:"secureConnection"`
 }
 
 type Config struct {
-	Couchbase Couchbase
-	Dcp       config.Dcp
+	Couchbase Couchbase  `yaml:"couchbase"`
+	Dcp       config.Dcp `yaml:",inline"`
 }
 
 func (c *Config) ApplyDefaults() {
