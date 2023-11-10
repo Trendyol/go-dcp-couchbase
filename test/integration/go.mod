@@ -1,13 +1,15 @@
-module example
+module integration-test-example
 
 go 1.20
 
-replace github.com/Trendyol/go-dcp-couchbase => ./../..
-
-require github.com/Trendyol/go-dcp-couchbase v1.0.0
+replace github.com/Trendyol/go-dcp-couchbase => ../../.
 
 require (
-	github.com/Trendyol/go-dcp v1.1.10 // indirect
+	github.com/Trendyol/go-dcp v1.1.10
+	github.com/Trendyol/go-dcp-couchbase v0.0.0-00010101000000-000000000000
+)
+
+require (
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/ansrivas/fiberprometheus/v2 v2.6.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect

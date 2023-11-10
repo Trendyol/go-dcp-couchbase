@@ -17,3 +17,9 @@ linter:
 
 run:
 	go run main.go
+
+test:
+	go test ./... -bench . -benchmem
+
+compose:
+	docker compose up --wait --build --force-recreate --remove-orphans

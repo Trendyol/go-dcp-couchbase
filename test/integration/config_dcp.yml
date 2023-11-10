@@ -1,0 +1,23 @@
+hosts:
+  - localhost:8091
+username: user
+password: 123456
+bucketName: dcp-test-backup
+rollbackMitigation:
+  disabled: true
+checkpoint:
+  type: manual
+dcp:
+  group:
+    name: groupName
+    membership:
+      type: static
+metadata:
+  type: couchbase
+  readOnly: true
+  config:
+    bucket: dcp-test-backup
+    scope: _default
+    collection: _default
+api:
+  port: 8081
