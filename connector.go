@@ -2,8 +2,9 @@ package dcpcouchbase
 
 import (
 	"errors"
-	"github.com/Trendyol/go-dcp"
 	"os"
+
+	"github.com/Trendyol/go-dcp"
 
 	"gopkg.in/yaml.v3"
 
