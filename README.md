@@ -112,6 +112,12 @@ Check out on [go-dcp](https://github.com/Trendyol/go-dcp#configuration)
 
 For DCP related metrics see [also](https://github.com/Trendyol/go-dcp#exposed-metrics).
 
+## Breaking Changes
+
+| Date taking effect | Date announced    | Change                         | How to check    |
+|--------------------|-------------------|--------------------------------|-----------------| 
+| November 14, 2023  | November 14, 2023 | Creating connector via builder | Compile project |
+
 ## Contributing
 
 Go Dcp Couchbase is always open for direct contributions. For more information please check
