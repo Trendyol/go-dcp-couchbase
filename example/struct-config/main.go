@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	c, err := dcpcouchbase.NewConnector(&config.Config{
+	c, err := dcpcouchbase.NewConnectorBuilder(&config.Config{
 		Dcp: dcpConfig.Dcp{
 			Hosts:      []string{"localhost:8091"},
 			Username:   "user",
@@ -41,7 +41,7 @@ func main() {
 			BatchSizeLimit: 10,
 			RequestTimeout: 10 * time.Second,
 		},
-	}, dcpcouchbase.DefaultMapper)
+	}).SetMapper(dcpcouchbase.DefaultMapper).Build()
 	if err != nil {
 		panic(err)
 	}
