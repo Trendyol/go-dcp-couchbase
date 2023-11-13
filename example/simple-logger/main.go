@@ -7,7 +7,10 @@ import (
 
 func main() {
 	logger := createLogger()
-	connector, err := dcpcouchbase.NewConnectorWithLogger("config.yml", dcpcouchbase.DefaultMapper, logger)
+	connector, err := dcpcouchbase.NewConnectorBuilder("config.yml").
+		SetMapper(dcpcouchbase.DefaultMapper).
+		SetLogger(logger).
+		Build()
 	if err != nil {
 		panic(err)
 	}

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"os"
 
+	"github.com/Trendyol/go-dcp"
+
 	"gopkg.in/yaml.v3"
 
 	"github.com/sirupsen/logrus"
@@ -12,7 +14,6 @@ import (
 	"github.com/Trendyol/go-dcp-couchbase/couchbase"
 	"github.com/Trendyol/go-dcp-couchbase/metric"
 
-	"github.com/Trendyol/go-dcp"
 	dcpClientConfig "github.com/Trendyol/go-dcp/config"
 	"github.com/Trendyol/go-dcp/logger"
 	"github.com/Trendyol/go-dcp/models"
@@ -77,7 +78,7 @@ func createDcp(cfg any, listener models.Listener) (dcp.Dcp, error) {
 	}
 }
 
-func NewConnector(cf any, mapper Mapper) (Connector, error) {
+func newConnector(cf any, mapper Mapper) (Connector, error) {
 	cfg, err := newConfig(cf)
 	if err != nil {
 		return nil, err
@@ -126,14 +127,6 @@ func NewConnector(cf any, mapper Mapper) (Connector, error) {
 	return connector, nil
 }
 
-func NewConnectorWithLogger(cf any, mapper Mapper, logrus *logrus.Logger) (Connector, error) {
-	logger.Log = &logger.Loggers{
-		Logrus: logrus,
-	}
-
-	return NewConnector(cf, mapper)
-}
-
 func newConfig(cf any) (*config.Config, error) {
 	switch v := cf.(type) {
 	case *config.Config:
@@ -158,4 +151,32 @@ func newConnectorConfigFromPath(path string) (*config.Config, error) {
 		return nil, err
 	}
 	return &c, nil
+}
+
+type ConnectorBuilder struct {
+	mapper Mapper
+	config any
+}
+
+func NewConnectorBuilder(config any) ConnectorBuilder {
+	return ConnectorBuilder{
+		config: config,
+		mapper: DefaultMapper,
+	}
+}
+
+func (c ConnectorBuilder) SetMapper(mapper Mapper) ConnectorBuilder {
+	c.mapper = mapper
+	return c
+}
+
+func (c ConnectorBuilder) Build() (Connector, error) {
+	return newConnector(c.config, c.mapper)
+}
+
+func (c ConnectorBuilder) SetLogger(l *logrus.Logger) ConnectorBuilder {
+	logger.Log = &logger.Loggers{
+		Logrus: l,
+	}
+	return c
 }
