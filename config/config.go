@@ -3,6 +3,8 @@ package config
 import (
 	"time"
 
+	"github.com/Trendyol/go-dcp/helpers"
+
 	"github.com/Trendyol/go-dcp/config"
 )
 
@@ -12,18 +14,18 @@ const (
 )
 
 type Couchbase struct {
-	RootCAPath           string        `yaml:"rootCAPath"`
+	BatchByteSizeLimit   any           `yaml:"batchByteSizeLimit"`
 	Password             string        `yaml:"password"`
 	BucketName           string        `yaml:"bucketName"`
 	ScopeName            string        `yaml:"scopeName"`
 	CollectionName       string        `yaml:"collectionName"`
 	Username             string        `yaml:"username"`
+	RootCAPath           string        `yaml:"rootCAPath"`
 	Hosts                []string      `yaml:"hosts"`
-	ConnectionBufferSize uint          `yaml:"connectionBufferSize"`
 	BatchTickerDuration  time.Duration `yaml:"batchTickerDuration"`
 	ConnectionTimeout    time.Duration `yaml:"connectionTimeout"`
 	BatchSizeLimit       int           `yaml:"batchSizeLimit"`
-	BatchByteSizeLimit   int           `yaml:"batchByteSizeLimit"`
+	ConnectionBufferSize uint          `yaml:"connectionBufferSize"`
 	RequestTimeout       time.Duration `yaml:"requestTimeout"`
 	SecureConnection     bool          `yaml:"secureConnection"`
 }
@@ -67,7 +69,7 @@ func (c *Config) applyDefaultProcess() {
 	}
 
 	if c.Couchbase.BatchByteSizeLimit == 0 {
-		c.Couchbase.BatchByteSizeLimit = 10485760
+		c.Couchbase.BatchByteSizeLimit = helpers.ResolveUnionIntOrStringValue("10mb")
 	}
 
 	if c.Couchbase.RequestTimeout == 0 {

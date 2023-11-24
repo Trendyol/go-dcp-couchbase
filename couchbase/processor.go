@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Trendyol/go-dcp/helpers"
+
 	"github.com/couchbase/gocbcore/v10/memd"
 
 	"github.com/Trendyol/go-dcp-couchbase/config"
@@ -52,7 +54,7 @@ func NewProcessor(config *config.Config,
 		agent:               client.GetAgent(),
 		batchTicker:         time.NewTicker(config.Couchbase.BatchTickerDuration),
 		batchSizeLimit:      config.Couchbase.BatchSizeLimit,
-		batchByteSizeLimit:  config.Couchbase.BatchByteSizeLimit,
+		batchByteSizeLimit:  helpers.ResolveUnionIntOrStringValue(config.Couchbase.BatchByteSizeLimit),
 		batchTickerDuration: config.Couchbase.BatchTickerDuration,
 		requestTimeout:      config.Couchbase.RequestTimeout,
 		scopeName:           config.Couchbase.ScopeName,
