@@ -11,6 +11,8 @@ import (
 )
 
 func TestCouchbase(t *testing.T) {
+	time.Sleep(time.Minute)
+
 	connector, err := dcpcouchbase.NewConnectorBuilder("config.yml").
 		SetMapper(dcpcouchbase.DefaultMapper).
 		Build()
@@ -26,8 +28,6 @@ func TestCouchbase(t *testing.T) {
 	}()
 
 	go func() {
-		time.Sleep(20 * time.Second)
-
 		finish := make(chan struct{}, 1)
 
 		totalEvent := 0
@@ -63,7 +63,6 @@ func TestCouchbase(t *testing.T) {
 	}()
 
 	wg.Wait()
-	t.Log("done done done")
 }
 
 type CountResponse struct {
