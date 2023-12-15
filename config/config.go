@@ -31,7 +31,7 @@ type Couchbase struct {
 }
 
 type Config struct {
-	Couchbase Couchbase  `yaml:"couchbase"  mapstructure:"couchbase"`
+	Couchbase Couchbase  `yaml:"couchbase" mapstructure:"couchbase"`
 	Dcp       config.Dcp `yaml:",inline" mapstructure:",squash"`
 }
 
