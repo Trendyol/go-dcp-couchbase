@@ -68,7 +68,7 @@ func (c *Config) applyDefaultProcess() {
 		c.Couchbase.BatchSizeLimit = 1000
 	}
 
-	if c.Couchbase.BatchByteSizeLimit == 0 {
+	if c.Couchbase.BatchByteSizeLimit == nil {
 		c.Couchbase.BatchByteSizeLimit = helpers.ResolveUnionIntOrStringValue("10mb")
 	}
 
