@@ -25,10 +25,11 @@ type Connector interface {
 }
 
 type connector struct {
-	dcp       dcp.Dcp
-	config    *config.Config
-	mapper    Mapper
-	processor *couchbase.Processor
+	dcp          dcp.Dcp
+	config       *config.Config
+	mapper       Mapper
+	processor    *couchbase.Processor
+	targetClient couchbase.TargetClient
 }
 
 func (c *connector) Start() {
@@ -57,7 +58,12 @@ func (c *connector) listener(ctx *models.ListenerContext) {
 		return
 	}
 
-	actions := c.mapper(e)
+	actions := c.mapper(
+		couchbase.EventContext{
+			TargetClient: c.targetClient,
+			Event:        e,
+		},
+	)
 
 	if len(actions) == 0 {
 		ctx.Ack()
@@ -104,8 +110,18 @@ func newConnector(cf any, mapper Mapper) (Connector, error) {
 	dcpConfig.Checkpoint.Type = "manual"
 
 	connector.dcp = dcp
+
+	client := couchbase.NewClient(&cfg.Couchbase)
+	err = client.Connect()
+	if err != nil {
+		return nil, err
+	}
+
+	connector.targetClient = couchbase.NewTargetClient(cfg, client)
+
 	processor, err := couchbase.NewProcessor(
 		cfg,
+		client,
 		dcp.Commit,
 	)
 	if err != nil {

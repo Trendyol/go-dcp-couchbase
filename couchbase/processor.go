@@ -20,7 +20,6 @@ import (
 type Processor struct {
 	client              Client
 	metric              *Metric
-	agent               *gocbcore.Agent
 	batchTicker         *time.Ticker
 	dcpCheckpointCommit func()
 	scopeName           string
@@ -40,18 +39,13 @@ type Metric struct {
 	BulkRequestProcessLatencyMs int64
 }
 
-func NewProcessor(config *config.Config,
+func NewProcessor(
+	config *config.Config,
+	client Client,
 	dcpCheckpointCommit func(),
 ) (*Processor, error) {
-	client := NewClient(&config.Couchbase)
-	err := client.Connect()
-	if err != nil {
-		return nil, err
-	}
-
 	processor := &Processor{
 		client:              client,
-		agent:               client.GetAgent(),
 		batchTicker:         time.NewTicker(config.Couchbase.BatchTickerDuration),
 		batchSizeLimit:      config.Couchbase.BatchSizeLimit,
 		batchByteSizeLimit:  helpers.ResolveUnionIntOrStringValue(config.Couchbase.BatchByteSizeLimit),
@@ -139,8 +133,8 @@ func panicOrGo(err error, wg *sync.WaitGroup) {
 		return
 	}
 
-	var keyValueErr *gocbcore.KeyValueError
-	if errors.As(err, &keyValueErr) {
+	var kvErr *gocbcore.KeyValueError
+	if errors.As(err, &kvErr) && kvErr.StatusCode == memd.StatusKeyNotFound {
 		wg.Done()
 		return
 	}
