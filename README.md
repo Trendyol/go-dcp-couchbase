@@ -92,9 +92,9 @@ Check out on [go-dcp](https://github.com/Trendyol/go-dcp#configuration)
 | Variable                         | Type          | Required | Default  | Description                                                                                    |                                                           
 |----------------------------------|---------------|----------|----------|------------------------------------------------------------------------------------------------|
 | `couchbase.hosts`                | []string      | yes      |          | Couchbase connection urls                                                                      |
-| `couchabse.username`             | string        | yes      |          | Defines Couchbase username                                                                     |
-| `couchabse.password`             | string        | yes      |          | Defines Couchbase password                                                                     |
-| `couchabse.bucketName`           | string        | yes      |          | Defines Couchbase bucket name                                                                  |
+| `couchbase.username`             | string        | yes      |          | Defines Couchbase username                                                                     |
+| `couchbase.password`             | string        | yes      |          | Defines Couchbase password                                                                     |
+| `couchbase.bucketName`           | string        | yes      |          | Defines Couchbase bucket name                                                                  |
 | `couchbase.scopeName`            | string        | no       | _default | Defines Couchbase scope name                                                                   |
 | `couchbase.collectionName`       | string        | no       | _default | Defines Couchbase collection name                                                              |
 | `couchbase.batchSizeLimit`       | int           | no       | 1000     | Maximum message count for batch, if exceed flush will be triggered.                            |
