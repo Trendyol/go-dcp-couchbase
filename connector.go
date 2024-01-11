@@ -49,11 +49,11 @@ func (c *connector) listener(ctx *models.ListenerContext) {
 	var e couchbase.Event
 	switch event := ctx.Event.(type) {
 	case models.DcpMutation:
-		e = couchbase.NewMutateEvent(event.Key, event.Value, event.CollectionName, event.EventTime, event.Cas, event.VbID)
+		e = couchbase.NewMutateEvent(event.Key, event.Value, event.CollectionName, couchbase.NewMutateMetadata(event))
 	case models.DcpExpiration:
-		e = couchbase.NewExpireEvent(event.Key, nil, event.CollectionName, event.EventTime, event.Cas, event.VbID)
+		e = couchbase.NewExpireEvent(event.Key, nil, event.CollectionName, couchbase.NewExpireMetadata(event))
 	case models.DcpDeletion:
-		e = couchbase.NewDeleteEvent(event.Key, nil, event.CollectionName, event.EventTime, event.Cas, event.VbID)
+		e = couchbase.NewDeleteEvent(event.Key, nil, event.CollectionName, couchbase.NewDeleteMetadata(event))
 	default:
 		return
 	}
@@ -70,7 +70,7 @@ func (c *connector) listener(ctx *models.ListenerContext) {
 		return
 	}
 
-	c.processor.AddActions(ctx, e.EventTime, actions)
+	c.processor.AddActions(ctx, e.Metadata.EventTime, actions)
 }
 
 func createDcp(cfg any, listener models.Listener) (dcp.Dcp, error) {
