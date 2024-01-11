@@ -18,6 +18,7 @@ import (
 )
 
 type Processor struct {
+	sinkResponseHandler SinkResponseHandler
 	client              Client
 	metric              *Metric
 	batchTicker         *time.Ticker
@@ -25,14 +26,13 @@ type Processor struct {
 	scopeName           string
 	collectionName      string
 	batch               []CBActionDocument
-	batchSize           int
 	requestTimeout      time.Duration
 	batchTickerDuration time.Duration
 	batchByteSizeLimit  int
 	batchSizeLimit      int
+	batchSize           int
 	flushLock           sync.Mutex
 	isDcpRebalancing    bool
-	sinkResponseHandler SinkResponseHandler
 }
 
 type Metric struct {
@@ -139,7 +139,9 @@ func (b *Processor) panicOrGo(action CBActionDocument, err error, wg *sync.WaitG
 	}
 
 	var kvErr *gocbcore.KeyValueError
-	if errors.As(err, &kvErr) && kvErr.StatusCode == memd.StatusKeyNotFound {
+	if errors.As(err, &kvErr) && (kvErr.StatusCode == memd.StatusKeyNotFound ||
+		kvErr.StatusCode == memd.StatusSubDocPathNotFound ||
+		kvErr.StatusCode == memd.StatusSubDocMultiPathFailureDeleted) {
 		isRequestSuccessful = true
 	}
 
