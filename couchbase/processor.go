@@ -18,6 +18,7 @@ import (
 )
 
 type Processor struct {
+	sinkResponseHandler SinkResponseHandler
 	client              Client
 	metric              *Metric
 	batchTicker         *time.Ticker
@@ -25,11 +26,11 @@ type Processor struct {
 	scopeName           string
 	collectionName      string
 	batch               []CBActionDocument
-	batchSize           int
 	requestTimeout      time.Duration
 	batchTickerDuration time.Duration
 	batchByteSizeLimit  int
 	batchSizeLimit      int
+	batchSize           int
 	flushLock           sync.Mutex
 	isDcpRebalancing    bool
 }
@@ -43,6 +44,7 @@ func NewProcessor(
 	config *config.Config,
 	client Client,
 	dcpCheckpointCommit func(),
+	sinkResponseHandler SinkResponseHandler,
 ) (*Processor, error) {
 	processor := &Processor{
 		client:              client,
@@ -55,6 +57,7 @@ func NewProcessor(
 		collectionName:      config.Couchbase.CollectionName,
 		dcpCheckpointCommit: dcpCheckpointCommit,
 		metric:              &Metric{},
+		sinkResponseHandler: sinkResponseHandler,
 	}
 
 	return processor, nil
@@ -127,19 +130,46 @@ func (b *Processor) GetMetric() *Metric {
 	return b.metric
 }
 
-func panicOrGo(err error, wg *sync.WaitGroup) {
+func (b *Processor) panicOrGo(action CBActionDocument, err error, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	isRequestSuccessful := false
 	if err == nil {
-		wg.Done()
-		return
+		isRequestSuccessful = true
 	}
 
 	var kvErr *gocbcore.KeyValueError
-	if errors.As(err, &kvErr) && kvErr.StatusCode == memd.StatusKeyNotFound {
-		wg.Done()
+	if errors.As(err, &kvErr) && (kvErr.StatusCode == memd.StatusKeyNotFound ||
+		kvErr.StatusCode == memd.StatusSubDocPathNotFound ||
+		kvErr.StatusCode == memd.StatusSubDocMultiPathFailureDeleted) {
+		isRequestSuccessful = true
+	}
+
+	if isRequestSuccessful {
+		b.handleSuccess(&action)
 		return
 	}
 
-	panic(err)
+	b.handleError(&action, err)
+}
+
+func (b *Processor) handleError(action *CBActionDocument, err error) {
+	if b.sinkResponseHandler == nil {
+		panic(err)
+	}
+
+	b.sinkResponseHandler.OnError(&SinkResponseHandlerContext{
+		Action: action,
+		Err:    err,
+	})
+}
+
+func (b *Processor) handleSuccess(action *CBActionDocument) {
+	if b.sinkResponseHandler != nil {
+		b.sinkResponseHandler.OnSuccess(&SinkResponseHandlerContext{
+			Action: action,
+		})
+	}
 }
 
 func (b *Processor) bulkRequest() {
@@ -158,22 +188,22 @@ func (b *Processor) bulkRequest() {
 		case v.Type == Set:
 			err = b.client.CreateDocument(ctx, b.scopeName, b.collectionName, v.ID, v.Source, 0, 0,
 				func(result *gocbcore.StoreResult, err error) {
-					panicOrGo(err, &wg)
+					b.panicOrGo(v, err, &wg)
 				})
 		case v.Type == MutateIn:
 			err = b.client.CreatePath(ctx, b.scopeName, b.collectionName, v.ID, v.Path, v.Source, memd.SubdocDocFlagMkDoc,
 				func(result *gocbcore.MutateInResult, err error) {
-					panicOrGo(err, &wg)
+					b.panicOrGo(v, err, &wg)
 				})
 		case v.Type == DeletePath:
 			err = b.client.DeletePath(ctx, b.scopeName, b.collectionName, v.ID, v.Path,
 				func(result *gocbcore.MutateInResult, err error) {
-					panicOrGo(err, &wg)
+					b.panicOrGo(v, err, &wg)
 				})
 		case v.Type == Delete:
 			err = b.client.DeleteDocument(ctx, b.scopeName, b.collectionName, v.ID,
 				func(result *gocbcore.DeleteResult, err error) {
-					panicOrGo(err, &wg)
+					b.panicOrGo(v, err, &wg)
 				})
 		default:
 			logger.Log.Error("Unexpected action type: %v", v.Type)

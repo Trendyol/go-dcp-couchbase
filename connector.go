@@ -84,7 +84,7 @@ func createDcp(cfg any, listener models.Listener) (dcp.Dcp, error) {
 	}
 }
 
-func newConnector(cf any, mapper Mapper) (Connector, error) {
+func newConnector(cf any, mapper Mapper, sinkResponseHandler couchbase.SinkResponseHandler) (Connector, error) {
 	cfg, err := newConfig(cf)
 	if err != nil {
 		return nil, err
@@ -123,6 +123,7 @@ func newConnector(cf any, mapper Mapper) (Connector, error) {
 		cfg,
 		client,
 		dcp.Commit,
+		sinkResponseHandler,
 	)
 	if err != nil {
 		return nil, err
@@ -170,14 +171,16 @@ func newConnectorConfigFromPath(path string) (*config.Config, error) {
 }
 
 type ConnectorBuilder struct {
-	mapper Mapper
-	config any
+	mapper              Mapper
+	config              any
+	sinkResponseHandler couchbase.SinkResponseHandler
 }
 
 func NewConnectorBuilder(config any) *ConnectorBuilder {
 	return &ConnectorBuilder{
-		config: config,
-		mapper: DefaultMapper,
+		config:              config,
+		mapper:              DefaultMapper,
+		sinkResponseHandler: nil,
 	}
 }
 
@@ -187,12 +190,17 @@ func (c *ConnectorBuilder) SetMapper(mapper Mapper) *ConnectorBuilder {
 }
 
 func (c *ConnectorBuilder) Build() (Connector, error) {
-	return newConnector(c.config, c.mapper)
+	return newConnector(c.config, c.mapper, c.sinkResponseHandler)
 }
 
 func (c *ConnectorBuilder) SetLogger(l *logrus.Logger) *ConnectorBuilder {
 	logger.Log = &logger.Loggers{
 		Logrus: l,
 	}
+	return c
+}
+
+func (c *ConnectorBuilder) SetSinkResponseHandler(sinkResponseHandler couchbase.SinkResponseHandler) *ConnectorBuilder {
+	c.sinkResponseHandler = sinkResponseHandler
 	return c
 }
