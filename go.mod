@@ -2,6 +2,11 @@ module github.com/Trendyol/go-dcp-couchbase
 
 go 1.20
 
+retract (
+	v1.1.36
+	v1.1.34
+)
+
 require (
 	github.com/Trendyol/go-dcp v1.1.31
 	github.com/couchbase/gocbcore/v10 v10.3.2
