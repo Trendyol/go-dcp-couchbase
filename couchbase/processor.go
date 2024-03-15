@@ -113,14 +113,19 @@ func (b *Processor) AddActions(
 	ctx *models.ListenerContext,
 	eventTime time.Time,
 	actions []CBActionDocument,
+	isLastChunk bool,
 ) {
 	b.flushLock.Lock()
 	b.batch = append(b.batch, actions...)
 	b.batchSize += len(actions)
-	ctx.Ack()
+	if isLastChunk {
+		ctx.Ack()
+	}
 	b.flushLock.Unlock()
 
-	b.metric.ProcessLatencyMs = time.Since(eventTime).Milliseconds()
+	if isLastChunk {
+		b.metric.ProcessLatencyMs = time.Since(eventTime).Milliseconds()
+	}
 	if b.batchSize >= b.batchSizeLimit || len(b.batch) >= b.batchByteSizeLimit {
 		b.flushMessages()
 	}

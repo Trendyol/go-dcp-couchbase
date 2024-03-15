@@ -2,7 +2,10 @@ package dcpcouchbase
 
 import (
 	"errors"
+	"math"
 	"os"
+
+	"github.com/Trendyol/go-dcp/helpers"
 
 	"github.com/Trendyol/go-dcp"
 
@@ -70,7 +73,12 @@ func (c *connector) listener(ctx *models.ListenerContext) {
 		return
 	}
 
-	c.processor.AddActions(ctx, e.EventTime, actions)
+	chunkCount := math.Ceil(float64(len(actions)) / float64(c.config.Couchbase.BatchSizeLimit))
+	chunks := helpers.ChunkSlice[couchbase.CBActionDocument](actions, int(chunkCount))
+	lastChunkIndex := len(chunks) - 1
+	for idx, chunk := range chunks {
+		c.processor.AddActions(ctx, e.EventTime, chunk, idx == lastChunkIndex)
+	}
 }
 
 func createDcp(cfg any, listener models.Listener) (dcp.Dcp, error) {
