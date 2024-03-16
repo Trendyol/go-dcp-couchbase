@@ -2,7 +2,6 @@ package dcpcouchbase
 
 import (
 	"errors"
-	"math"
 	"os"
 
 	"github.com/Trendyol/go-dcp/helpers"
@@ -73,11 +72,15 @@ func (c *connector) listener(ctx *models.ListenerContext) {
 		return
 	}
 
-	chunkCount := math.Ceil(float64(len(actions)) / float64(c.config.Couchbase.BatchSizeLimit))
-	chunks := helpers.ChunkSlice[couchbase.CBActionDocument](actions, int(chunkCount))
-	lastChunkIndex := len(chunks) - 1
-	for idx, chunk := range chunks {
-		c.processor.AddActions(ctx, e.EventTime, chunk, idx == lastChunkIndex)
+	batchSizeLimit := c.config.Couchbase.BatchSizeLimit
+	if len(actions) > batchSizeLimit {
+		chunks := helpers.ChunkSliceWithSize[couchbase.CBActionDocument](actions, batchSizeLimit)
+		lastChunkIndex := len(chunks) - 1
+		for idx, chunk := range chunks {
+			c.processor.AddActions(ctx, e.EventTime, chunk, idx == lastChunkIndex)
+		}
+	} else {
+		c.processor.AddActions(ctx, e.EventTime, actions, true)
 	}
 }
 
