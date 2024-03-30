@@ -8,8 +8,8 @@ retract (
 )
 
 require (
-	github.com/Trendyol/go-dcp v1.1.37
-	github.com/couchbase/gocbcore/v10 v10.3.2
+	github.com/Trendyol/go-dcp v1.1.38
+	github.com/couchbase/gocbcore/v10 v10.4.0
 	github.com/prometheus/client_golang v1.19.0
 	github.com/sirupsen/logrus v1.9.3
 	gopkg.in/yaml.v3 v3.0.1
