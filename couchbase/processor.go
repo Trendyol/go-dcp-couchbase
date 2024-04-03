@@ -146,6 +146,7 @@ func (b *Processor) panicOrGo(action CBActionDocument, err error, wg *sync.WaitG
 	var kvErr *gocbcore.KeyValueError
 	if errors.As(err, &kvErr) && (kvErr.StatusCode == memd.StatusKeyNotFound ||
 		kvErr.StatusCode == memd.StatusSubDocPathNotFound ||
+		kvErr.StatusCode == memd.StatusSubDocBadMulti ||
 		kvErr.StatusCode == memd.StatusSubDocMultiPathFailureDeleted) {
 		isRequestSuccessful = true
 	}
