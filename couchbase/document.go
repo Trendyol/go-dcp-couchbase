@@ -14,12 +14,14 @@ type CBActionDocument struct {
 	Source []byte
 	ID     []byte
 	Path   []byte
+	Size   int
 }
 
 func NewDeleteAction(key []byte) CBActionDocument {
 	return CBActionDocument{
 		ID:   key,
 		Type: Delete,
+		Size: len(key),
 	}
 }
 
@@ -28,6 +30,7 @@ func NewSetAction(key []byte, source []byte) CBActionDocument {
 		ID:     key,
 		Source: source,
 		Type:   Set,
+		Size:   len(key) + len(source),
 	}
 }
 
@@ -37,6 +40,7 @@ func NewMutateInAction(key []byte, path []byte, source []byte) CBActionDocument 
 		Source: source,
 		Type:   MutateIn,
 		Path:   path,
+		Size:   len(key) + len(path) + len(source),
 	}
 }
 
@@ -45,5 +49,6 @@ func NewDeletePathAction(key []byte, path []byte) CBActionDocument {
 		ID:   key,
 		Type: DeletePath,
 		Path: path,
+		Size: len(key) + len(path),
 	}
 }

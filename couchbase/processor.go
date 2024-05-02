@@ -29,6 +29,7 @@ type Processor struct {
 	requestTimeout      time.Duration
 	batchTickerDuration time.Duration
 	batchByteSizeLimit  int
+	batchByteSize       int
 	batchSizeLimit      int
 	batchSize           int
 	flushLock           sync.Mutex
@@ -38,6 +39,8 @@ type Processor struct {
 type Metric struct {
 	ProcessLatencyMs            int64
 	BulkRequestProcessLatencyMs int64
+	BulkRequestSize             int64
+	BulkRequestByteSize         int64
 }
 
 func NewProcessor(
@@ -88,6 +91,7 @@ func (b *Processor) flushMessages() {
 		b.batchTicker.Reset(b.batchTickerDuration)
 		b.batch = b.batch[:0]
 		b.batchSize = 0
+		b.batchByteSize = 0
 	}
 
 	b.dcpCheckpointCommit()
@@ -100,6 +104,7 @@ func (b *Processor) PrepareStartRebalancing() {
 	b.isDcpRebalancing = true
 	b.batch = b.batch[:0]
 	b.batchSize = 0
+	b.batchByteSize = 0
 }
 
 func (b *Processor) PrepareEndRebalancing() {
@@ -118,6 +123,9 @@ func (b *Processor) AddActions(
 	b.flushLock.Lock()
 	b.batch = append(b.batch, actions...)
 	b.batchSize += len(actions)
+	for _, action := range actions {
+		b.batchByteSize += action.Size
+	}
 	if isLastChunk {
 		ctx.Ack()
 	}
@@ -126,7 +134,7 @@ func (b *Processor) AddActions(
 	if isLastChunk {
 		b.metric.ProcessLatencyMs = time.Since(eventTime).Milliseconds()
 	}
-	if b.batchSize >= b.batchSizeLimit || len(b.batch) >= b.batchByteSizeLimit {
+	if b.batchSize >= b.batchSizeLimit || b.batchByteSize >= b.batchByteSizeLimit {
 		b.flushMessages()
 	}
 }
@@ -222,4 +230,6 @@ func (b *Processor) bulkRequest() {
 
 	wg.Wait()
 	b.metric.BulkRequestProcessLatencyMs = time.Since(startedTime).Milliseconds()
+	b.metric.BulkRequestSize = int64(b.batchSize)
+	b.metric.BulkRequestByteSize = int64(b.batchByteSize)
 }
