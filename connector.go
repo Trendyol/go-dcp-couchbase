@@ -3,6 +3,7 @@ package dcpcouchbase
 import (
 	"errors"
 	"os"
+	"time"
 
 	"github.com/Trendyol/go-dcp/helpers"
 
@@ -24,6 +25,7 @@ import (
 type Connector interface {
 	Start()
 	Close()
+	GetMapperProcessLatencyMs() int64
 }
 
 type connector struct {
@@ -32,6 +34,11 @@ type connector struct {
 	mapper       Mapper
 	processor    *couchbase.Processor
 	targetClient couchbase.TargetClient
+	metric       *Metric
+}
+
+type Metric struct {
+	MapperProcessLatencyMs int64
 }
 
 func (c *connector) Start() {
@@ -45,6 +52,10 @@ func (c *connector) Start() {
 func (c *connector) Close() {
 	c.dcp.Close()
 	c.processor.Close()
+}
+
+func (c *connector) GetMapperProcessLatencyMs() int64 {
+	return c.metric.MapperProcessLatencyMs
 }
 
 func (c *connector) listener(ctx *models.ListenerContext) {
@@ -69,12 +80,16 @@ func (c *connector) listener(ctx *models.ListenerContext) {
 		return
 	}
 
+	beforeMapperTime := time.Now()
+
 	actions := c.mapper(
 		couchbase.EventContext{
 			TargetClient: c.targetClient,
 			Event:        e,
 		},
 	)
+
+	c.metric.MapperProcessLatencyMs = time.Since(beforeMapperTime).Milliseconds()
 
 	if len(actions) == 0 {
 		ctx.Ack()
@@ -114,6 +129,7 @@ func newConnector(cf any, mapper Mapper, sinkResponseHandler couchbase.SinkRespo
 	connector := &connector{
 		mapper: mapper,
 		config: cfg,
+		metric: &Metric{},
 	}
 
 	if err != nil {
@@ -158,7 +174,7 @@ func newConnector(cf any, mapper Mapper, sinkResponseHandler couchbase.SinkRespo
 			processor: connector.processor,
 		})
 
-	metricCollector := metric.NewMetricCollector(connector.processor)
+	metricCollector := metric.NewMetricCollector(connector.processor, connector.GetMapperProcessLatencyMs)
 	dcp.SetMetricCollectors(metricCollector)
 
 	return connector, nil

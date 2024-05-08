@@ -7,9 +7,11 @@ import (
 )
 
 type Collector struct {
-	processor *couchbase.Processor
+	processor                 *couchbase.Processor
+	getMapperProcessLatencyMs func() int64
 
 	processLatency            *prometheus.Desc
+	mapperProcessLatency      *prometheus.Desc
 	bulkRequestProcessLatency *prometheus.Desc
 	bulkRequestSize           *prometheus.Desc
 	bulkRequestByteSize       *prometheus.Desc
@@ -26,6 +28,13 @@ func (s *Collector) Collect(ch chan<- prometheus.Metric) {
 		s.processLatency,
 		prometheus.GaugeValue,
 		float64(processorMetric.ProcessLatencyMs),
+		[]string{}...,
+	)
+
+	ch <- prometheus.MustNewConstMetric(
+		s.mapperProcessLatency,
+		prometheus.GaugeValue,
+		float64(s.getMapperProcessLatencyMs()),
 		[]string{}...,
 	)
 
@@ -51,13 +60,21 @@ func (s *Collector) Collect(ch chan<- prometheus.Metric) {
 	)
 }
 
-func NewMetricCollector(processor *couchbase.Processor) *Collector {
+func NewMetricCollector(processor *couchbase.Processor, getMapperProcessLatencyMs func() int64) *Collector {
 	return &Collector{
-		processor: processor,
+		processor:                 processor,
+		getMapperProcessLatencyMs: getMapperProcessLatencyMs,
 
 		processLatency: prometheus.NewDesc(
 			prometheus.BuildFQName(helpers.Name, "couchbase_connector_latency_ms", "current"),
 			"Couchbase connector latency ms",
+			[]string{},
+			nil,
+		),
+
+		mapperProcessLatency: prometheus.NewDesc(
+			prometheus.BuildFQName(helpers.Name, "couchbase_connector_mapper_latency_ms", "current"),
+			"Couchbase connector mapper latency ms",
 			[]string{},
 			nil,
 		),
