@@ -20,6 +20,7 @@ type Client interface {
 		path []byte,
 		value []byte,
 		flags memd.SubdocDocFlag,
+		cas *gocbcore.Cas,
 		cb gocbcore.MutateInCallback,
 	) error
 	CreateDocument(ctx context.Context,
@@ -35,6 +36,7 @@ type Client interface {
 		scopeName string,
 		collectionName string,
 		id []byte,
+		cas *gocbcore.Cas,
 		cb gocbcore.DeleteCallback,
 	) error
 	DeletePath(ctx context.Context,
@@ -42,6 +44,7 @@ type Client interface {
 		collectionName string,
 		id []byte,
 		path []byte,
+		cas *gocbcore.Cas,
 		cb gocbcore.MutateInCallback,
 	) error
 	Close()
@@ -79,11 +82,12 @@ func (s *client) CreatePath(ctx context.Context,
 	path []byte,
 	value []byte,
 	flags memd.SubdocDocFlag,
+	cas *gocbcore.Cas,
 	cb gocbcore.MutateInCallback,
 ) error {
 	deadline, _ := ctx.Deadline()
 
-	_, err := s.agent.MutateIn(gocbcore.MutateInOptions{
+	options := gocbcore.MutateInOptions{
 		Key:   id,
 		Flags: flags,
 		Ops: []gocbcore.SubDocOp{
@@ -96,7 +100,13 @@ func (s *client) CreatePath(ctx context.Context,
 		Deadline:       deadline,
 		ScopeName:      scopeName,
 		CollectionName: collectionName,
-	}, cb)
+	}
+
+	_, err := s.agent.MutateIn(options, cb)
+
+	if cas != nil {
+		options.Cas = *cas
+	}
 
 	return err
 }
@@ -129,16 +139,23 @@ func (s *client) DeleteDocument(ctx context.Context,
 	scopeName string,
 	collectionName string,
 	id []byte,
+	cas *gocbcore.Cas,
 	cb gocbcore.DeleteCallback,
 ) error {
 	deadline, _ := ctx.Deadline()
 
-	_, err := s.agent.Delete(gocbcore.DeleteOptions{
+	options := gocbcore.DeleteOptions{
 		Key:            id,
 		Deadline:       deadline,
 		ScopeName:      scopeName,
 		CollectionName: collectionName,
-	}, cb)
+	}
+
+	if cas != nil {
+		options.Cas = *cas
+	}
+
+	_, err := s.agent.Delete(options, cb)
 
 	return err
 }
@@ -148,11 +165,12 @@ func (s *client) DeletePath(ctx context.Context,
 	collectionName string,
 	id []byte,
 	path []byte,
+	cas *gocbcore.Cas,
 	cb gocbcore.MutateInCallback,
 ) error {
 	deadline, _ := ctx.Deadline()
 
-	_, err := s.agent.MutateIn(gocbcore.MutateInOptions{
+	options := gocbcore.MutateInOptions{
 		Key: id,
 		Ops: []gocbcore.SubDocOp{
 			{
@@ -163,7 +181,13 @@ func (s *client) DeletePath(ctx context.Context,
 		Deadline:       deadline,
 		ScopeName:      scopeName,
 		CollectionName: collectionName,
-	}, cb)
+	}
+
+	if cas != nil {
+		options.Cas = *cas
+	}
+
+	_, err := s.agent.MutateIn(options, cb)
 
 	return err
 }

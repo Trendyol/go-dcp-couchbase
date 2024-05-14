@@ -10,11 +10,16 @@ const (
 )
 
 type CBActionDocument struct {
+	Cas    *uint64
 	Type   CbAction
 	Source []byte
 	ID     []byte
 	Path   []byte
 	Size   int
+}
+
+func (doc *CBActionDocument) SetCas(cas uint64) {
+	doc.Cas = &cas
 }
 
 func NewDeleteAction(key []byte) CBActionDocument {

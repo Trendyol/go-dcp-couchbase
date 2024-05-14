@@ -198,6 +198,8 @@ func (b *Processor) bulkRequest() {
 	for _, v := range b.batch {
 		var err error
 
+		cas := (*gocbcore.Cas)(v.Cas)
+
 		switch {
 		case v.Type == Set:
 			err = b.client.CreateDocument(ctx, b.scopeName, b.collectionName, v.ID, v.Source, 0, 0,
@@ -205,17 +207,17 @@ func (b *Processor) bulkRequest() {
 					b.panicOrGo(v, err, &wg)
 				})
 		case v.Type == MutateIn:
-			err = b.client.CreatePath(ctx, b.scopeName, b.collectionName, v.ID, v.Path, v.Source, memd.SubdocDocFlagMkDoc,
+			err = b.client.CreatePath(ctx, b.scopeName, b.collectionName, v.ID, v.Path, v.Source, memd.SubdocDocFlagMkDoc, cas,
 				func(result *gocbcore.MutateInResult, err error) {
 					b.panicOrGo(v, err, &wg)
 				})
 		case v.Type == DeletePath:
-			err = b.client.DeletePath(ctx, b.scopeName, b.collectionName, v.ID, v.Path,
+			err = b.client.DeletePath(ctx, b.scopeName, b.collectionName, v.ID, v.Path, cas,
 				func(result *gocbcore.MutateInResult, err error) {
 					b.panicOrGo(v, err, &wg)
 				})
 		case v.Type == Delete:
-			err = b.client.DeleteDocument(ctx, b.scopeName, b.collectionName, v.ID,
+			err = b.client.DeleteDocument(ctx, b.scopeName, b.collectionName, v.ID, cas,
 				func(result *gocbcore.DeleteResult, err error) {
 					b.panicOrGo(v, err, &wg)
 				})
