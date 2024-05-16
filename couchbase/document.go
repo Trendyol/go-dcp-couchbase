@@ -10,16 +10,21 @@ const (
 )
 
 type CBActionDocument struct {
-	Cas    *uint64
-	Type   CbAction
-	Source []byte
-	ID     []byte
-	Path   []byte
-	Size   int
+	Cas               *uint64
+	Type              CbAction
+	Source            []byte
+	ID                []byte
+	Path              []byte
+	Size              int
+	DisableAutoCreate bool
 }
 
 func (doc *CBActionDocument) SetCas(cas uint64) {
 	doc.Cas = &cas
+}
+
+func (doc *CBActionDocument) SetDisableAutoCreate(value bool) {
+	doc.DisableAutoCreate = value
 }
 
 func NewDeleteAction(key []byte) CBActionDocument {
