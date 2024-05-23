@@ -132,10 +132,6 @@ func newConnector(cf any, mapper Mapper, sinkResponseHandler couchbase.SinkRespo
 		metric: &Metric{},
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
 	dcp, err := createDcp(cfg.Dcp, connector.listener)
 	if err != nil {
 		logger.Log.Error("dcp error: %v", err)
@@ -160,15 +156,13 @@ func newConnector(cf any, mapper Mapper, sinkResponseHandler couchbase.SinkRespo
 		client,
 		dcp.Commit,
 		sinkResponseHandler,
+		connector.targetClient,
 	)
 	if err != nil {
 		return nil, err
 	}
 
 	connector.processor = processor
-	if err != nil {
-		return nil, err
-	}
 	connector.dcp.SetEventHandler(
 		&DcpEventHandler{
 			processor: connector.processor,

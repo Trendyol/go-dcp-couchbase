@@ -12,19 +12,17 @@ import (
 
 	"github.com/Trendyol/go-dcp-couchbase/config"
 
-	"github.com/Trendyol/go-dcp/logger"
 	"github.com/Trendyol/go-dcp/models"
 	"github.com/couchbase/gocbcore/v10"
 )
 
 type Processor struct {
 	sinkResponseHandler SinkResponseHandler
+	targetClient        TargetClient
 	client              Client
 	metric              *Metric
 	batchTicker         *time.Ticker
 	dcpCheckpointCommit func()
-	scopeName           string
-	collectionName      string
 	batch               []CBActionDocument
 	requestTimeout      time.Duration
 	batchTickerDuration time.Duration
@@ -48,6 +46,7 @@ func NewProcessor(
 	client Client,
 	dcpCheckpointCommit func(),
 	sinkResponseHandler SinkResponseHandler,
+	targetClient TargetClient,
 ) (*Processor, error) {
 	processor := &Processor{
 		client:              client,
@@ -56,11 +55,10 @@ func NewProcessor(
 		batchByteSizeLimit:  helpers.ResolveUnionIntOrStringValue(config.Couchbase.BatchByteSizeLimit),
 		batchTickerDuration: config.Couchbase.BatchTickerDuration,
 		requestTimeout:      config.Couchbase.RequestTimeout,
-		scopeName:           config.Couchbase.ScopeName,
-		collectionName:      config.Couchbase.CollectionName,
 		dcpCheckpointCommit: dcpCheckpointCommit,
 		metric:              &Metric{},
 		sinkResponseHandler: sinkResponseHandler,
+		targetClient:        targetClient,
 	}
 
 	return processor, nil
@@ -143,9 +141,7 @@ func (b *Processor) GetMetric() *Metric {
 	return b.metric
 }
 
-func (b *Processor) panicOrGo(action CBActionDocument, err error, wg *sync.WaitGroup) {
-	defer wg.Done()
-
+func (b *Processor) panicOrGo(action *CBActionDocument, err error) {
 	isRequestSuccessful := false
 	if err == nil {
 		isRequestSuccessful = true
@@ -160,11 +156,11 @@ func (b *Processor) panicOrGo(action CBActionDocument, err error, wg *sync.WaitG
 	}
 
 	if isRequestSuccessful {
-		b.handleSuccess(&action)
+		b.handleSuccess(action)
 		return
 	}
 
-	b.handleError(&action, err)
+	b.handleError(action, err)
 }
 
 func (b *Processor) handleError(action *CBActionDocument, err error) {
@@ -172,17 +168,27 @@ func (b *Processor) handleError(action *CBActionDocument, err error) {
 		panic(err)
 	}
 
-	b.sinkResponseHandler.OnError(&SinkResponseHandlerContext{
-		Action: action,
-		Err:    err,
-	})
+	s := &SinkResponseHandlerContext{
+		Action:       action,
+		Err:          err,
+		TargetClient: b.targetClient,
+	}
+	s.Retry = func(ctx context.Context) error {
+		return b.client.Execute(ctx, s.Action)
+	}
+	b.sinkResponseHandler.OnError(s)
 }
 
 func (b *Processor) handleSuccess(action *CBActionDocument) {
 	if b.sinkResponseHandler != nil {
-		b.sinkResponseHandler.OnSuccess(&SinkResponseHandlerContext{
-			Action: action,
-		})
+		s := &SinkResponseHandlerContext{
+			Action:       action,
+			TargetClient: b.targetClient,
+		}
+		s.Retry = func(ctx context.Context) error {
+			return b.client.Execute(ctx, s.Action)
+		}
+		b.sinkResponseHandler.OnSuccess(s)
 	}
 }
 
@@ -196,43 +202,9 @@ func (b *Processor) bulkRequest() {
 	wg.Add(len(b.batch))
 
 	for _, v := range b.batch {
-		var err error
-
-		casPtr := (*gocbcore.Cas)(v.Cas)
-
-		switch {
-		case v.Type == Set:
-			err = b.client.CreateDocument(ctx, b.scopeName, b.collectionName, v.ID, v.Source, 0, 0,
-				func(result *gocbcore.StoreResult, err error) {
-					b.panicOrGo(v, err, &wg)
-				})
-		case v.Type == MutateIn:
-			flags := memd.SubdocDocFlagMkDoc
-			if v.DisableAutoCreate {
-				flags = memd.SubdocDocFlagNone
-			}
-
-			err = b.client.CreatePath(ctx, b.scopeName, b.collectionName, v.ID, v.Path, v.Source, flags, casPtr,
-				func(result *gocbcore.MutateInResult, err error) {
-					b.panicOrGo(v, err, &wg)
-				})
-		case v.Type == DeletePath:
-			err = b.client.DeletePath(ctx, b.scopeName, b.collectionName, v.ID, v.Path, casPtr,
-				func(result *gocbcore.MutateInResult, err error) {
-					b.panicOrGo(v, err, &wg)
-				})
-		case v.Type == Delete:
-			err = b.client.DeleteDocument(ctx, b.scopeName, b.collectionName, v.ID, casPtr,
-				func(result *gocbcore.DeleteResult, err error) {
-					b.panicOrGo(v, err, &wg)
-				})
-		default:
-			logger.Log.Error("Unexpected action type: %v", v.Type)
-		}
-
-		if err != nil {
-			panic(err)
-		}
+		err := b.client.Execute(ctx, &v) //nolint:gosec
+		b.panicOrGo(&v, err)             //nolint:gosec
+		wg.Done()
 	}
 
 	wg.Wait()
