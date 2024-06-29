@@ -174,7 +174,13 @@ func (b *Processor) handleError(action *CBActionDocument, err error) {
 		TargetClient: b.targetClient,
 	}
 	s.Retry = func(ctx context.Context) error {
-		return b.client.Execute(ctx, s.Action)
+		errCh := make(chan error, 1)
+
+		b.client.Execute(ctx, s.Action, func(err error) {
+			errCh <- err
+		})
+
+		return <-errCh
 	}
 	b.sinkResponseHandler.OnError(s)
 }
@@ -186,7 +192,13 @@ func (b *Processor) handleSuccess(action *CBActionDocument) {
 			TargetClient: b.targetClient,
 		}
 		s.Retry = func(ctx context.Context) error {
-			return b.client.Execute(ctx, s.Action)
+			errCh := make(chan error, 1)
+
+			b.client.Execute(ctx, s.Action, func(err error) {
+				errCh <- err
+			})
+
+			return <-errCh
 		}
 		b.sinkResponseHandler.OnSuccess(s)
 	}
@@ -200,14 +212,16 @@ func (b *Processor) bulkRequest() {
 
 	var wg sync.WaitGroup
 	wg.Add(len(b.batch))
-
-	for _, v := range b.batch {
-		err := b.client.Execute(ctx, &v) //nolint:gosec
-		b.panicOrGo(&v, err)             //nolint:gosec
-		wg.Done()
+	for i := 0; i < len(b.batch); i++ {
+		func(idx int) {
+			b.client.Execute(ctx, &b.batch[idx], func(err error) {
+				b.panicOrGo(&b.batch[idx], err)
+				wg.Done()
+			})
+		}(i)
 	}
-
 	wg.Wait()
+
 	b.metric.BulkRequestProcessLatencyMs = time.Since(startedTime).Milliseconds()
 	b.metric.BulkRequestSize = int64(b.batchSize)
 	b.metric.BulkRequestByteSize = int64(b.batchByteSize)

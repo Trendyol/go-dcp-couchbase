@@ -48,7 +48,7 @@ type Client interface {
 		cas *gocbcore.Cas,
 		cb gocbcore.MutateInCallback,
 	) error
-	Execute(ctx context.Context, action *CBActionDocument) error
+	Execute(ctx context.Context, action *CBActionDocument, callback func(err error))
 	Close()
 }
 
@@ -194,17 +194,15 @@ func (s *client) DeletePath(ctx context.Context,
 	return err
 }
 
-func (s *client) Execute(ctx context.Context, action *CBActionDocument) error {
+func (s *client) Execute(ctx context.Context, action *CBActionDocument, callback func(error)) {
 	var err error
-	respErrCh := make(chan error, 1)
-
 	casPtr := (*gocbcore.Cas)(action.Cas)
 
 	switch {
 	case action.Type == Set:
 		err = s.CreateDocument(ctx, s.config.ScopeName, s.config.CollectionName, action.ID, action.Source, 0, 0,
 			func(result *gocbcore.StoreResult, err error) {
-				respErrCh <- err
+				callback(err)
 			})
 	case action.Type == MutateIn:
 		flags := memd.SubdocDocFlagMkDoc
@@ -214,27 +212,25 @@ func (s *client) Execute(ctx context.Context, action *CBActionDocument) error {
 
 		err = s.CreatePath(ctx, s.config.ScopeName, s.config.CollectionName, action.ID, action.Path, action.Source, flags, casPtr,
 			func(result *gocbcore.MutateInResult, err error) {
-				respErrCh <- err
+				callback(err)
 			})
 	case action.Type == DeletePath:
 		err = s.DeletePath(ctx, s.config.ScopeName, s.config.CollectionName, action.ID, action.Path, casPtr,
 			func(result *gocbcore.MutateInResult, err error) {
-				respErrCh <- err
+				callback(err)
 			})
 	case action.Type == Delete:
 		err = s.DeleteDocument(ctx, s.config.ScopeName, s.config.CollectionName, action.ID, casPtr,
 			func(result *gocbcore.DeleteResult, err error) {
-				respErrCh <- err
+				callback(err)
 			})
 	default:
-		return fmt.Errorf("unexpected action type: %v", action.Type)
+		err = fmt.Errorf("unexpected action type: %v", action.Type)
 	}
 
 	if err != nil {
-		return err
+		callback(err)
 	}
-
-	return <-respErrCh
 }
 
 func (s *client) Close() {
