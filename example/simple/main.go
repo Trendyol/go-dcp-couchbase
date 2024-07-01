@@ -25,9 +25,9 @@ type sinkResponseHandler struct {
 }
 
 func (s *sinkResponseHandler) OnSuccess(ctx *couchbase.SinkResponseHandlerContext) {
-	fmt.Printf("OnSuccess %v\n", string(ctx.Action.Source))
+	fmt.Printf("OnSuccess %v\n", string(ctx.Action.ID))
 }
 
 func (s *sinkResponseHandler) OnError(ctx *couchbase.SinkResponseHandlerContext) {
-	fmt.Printf("OnError %v\n", string(ctx.Action.Source))
+	fmt.Printf("OnError %v %v\n", string(ctx.Action.ID), ctx.Err)
 }

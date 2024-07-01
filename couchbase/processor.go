@@ -204,6 +204,11 @@ func (b *Processor) handleSuccess(action *CBActionDocument) {
 	}
 }
 
+func (b *Processor) handleResponse(idx int, wg *sync.WaitGroup, err error) {
+	b.panicOrGo(&b.batch[idx], err)
+	wg.Done()
+}
+
 func (b *Processor) bulkRequest() {
 	startedTime := time.Now()
 
@@ -215,8 +220,7 @@ func (b *Processor) bulkRequest() {
 	for i := 0; i < len(b.batch); i++ {
 		func(idx int) {
 			b.client.Execute(ctx, &b.batch[idx], func(err error) {
-				b.panicOrGo(&b.batch[idx], err)
-				wg.Done()
+				go b.handleResponse(idx, &wg, err)
 			})
 		}(i)
 	}
