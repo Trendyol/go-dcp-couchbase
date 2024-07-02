@@ -64,12 +64,13 @@ func (s *client) Connect() error {
 		s.config.ConnectionBufferSize, s.config.ConnectionTimeout,
 	)
 	if err != nil {
+		logger.Log.Error("error while connect to target bucket, err: %v", err)
 		return err
 	}
 
 	s.agent = agent
 
-	logger.Log.Info("connected to %s, bucket: %s", s.config.Hosts, s.config.BucketName)
+	logger.Log.Info("connected to %s, target bucket: %s", s.config.Hosts, s.config.BucketName)
 	return nil
 }
 

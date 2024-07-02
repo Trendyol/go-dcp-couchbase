@@ -8,7 +8,7 @@ retract (
 )
 
 require (
-	github.com/Trendyol/go-dcp v1.1.46
+	github.com/Trendyol/go-dcp v1.1.47
 	github.com/couchbase/gocbcore/v10 v10.4.1
 	github.com/prometheus/client_golang v1.19.1
 	github.com/sirupsen/logrus v1.9.3
