@@ -22,6 +22,8 @@ type Client interface {
 		value []byte,
 		flags memd.SubdocDocFlag,
 		cas *gocbcore.Cas,
+		expiry uint32,
+		preserveExpiry bool,
 		cb gocbcore.MutateInCallback,
 	) error
 	CreateDocument(ctx context.Context,
@@ -46,6 +48,8 @@ type Client interface {
 		id []byte,
 		path []byte,
 		cas *gocbcore.Cas,
+		expiry uint32,
+		preserveExpiry bool,
 		cb gocbcore.MutateInCallback,
 	) error
 	Execute(ctx context.Context, action *CBActionDocument, callback func(err error))
@@ -86,6 +90,8 @@ func (s *client) CreatePath(ctx context.Context,
 	value []byte,
 	flags memd.SubdocDocFlag,
 	cas *gocbcore.Cas,
+	expiry uint32,
+	preserveExpiry bool,
 	cb gocbcore.MutateInCallback,
 ) error {
 	deadline, _ := ctx.Deadline()
@@ -100,6 +106,8 @@ func (s *client) CreatePath(ctx context.Context,
 				Path:  string(path),
 			},
 		},
+		Expiry:         expiry,
+		PreserveExpiry: preserveExpiry,
 		Deadline:       deadline,
 		ScopeName:      scopeName,
 		CollectionName: collectionName,
@@ -169,6 +177,8 @@ func (s *client) DeletePath(ctx context.Context,
 	id []byte,
 	path []byte,
 	cas *gocbcore.Cas,
+	expiry uint32,
+	preserveExpiry bool,
 	cb gocbcore.MutateInCallback,
 ) error {
 	deadline, _ := ctx.Deadline()
@@ -181,6 +191,8 @@ func (s *client) DeletePath(ctx context.Context,
 				Path: string(path),
 			},
 		},
+		Expiry:         expiry,
+		PreserveExpiry: preserveExpiry,
 		Deadline:       deadline,
 		ScopeName:      scopeName,
 		CollectionName: collectionName,
@@ -201,7 +213,8 @@ func (s *client) Execute(ctx context.Context, action *CBActionDocument, callback
 
 	switch {
 	case action.Type == Set:
-		err = s.CreateDocument(ctx, s.config.ScopeName, s.config.CollectionName, action.ID, action.Source, 0, 0,
+		err = s.CreateDocument(ctx, s.config.ScopeName, s.config.CollectionName,
+			action.ID, action.Source, 0, action.Expiry,
 			func(result *gocbcore.StoreResult, err error) {
 				callback(err)
 			})
@@ -211,17 +224,20 @@ func (s *client) Execute(ctx context.Context, action *CBActionDocument, callback
 			flags = memd.SubdocDocFlagNone
 		}
 
-		err = s.CreatePath(ctx, s.config.ScopeName, s.config.CollectionName, action.ID, action.Path, action.Source, flags, casPtr,
+		err = s.CreatePath(ctx, s.config.ScopeName, s.config.CollectionName,
+			action.ID, action.Path, action.Source, flags, casPtr, action.Expiry, action.PreserveExpiry,
 			func(result *gocbcore.MutateInResult, err error) {
 				callback(err)
 			})
 	case action.Type == DeletePath:
-		err = s.DeletePath(ctx, s.config.ScopeName, s.config.CollectionName, action.ID, action.Path, casPtr,
+		err = s.DeletePath(ctx, s.config.ScopeName, s.config.CollectionName,
+			action.ID, action.Path, casPtr, action.Expiry, action.PreserveExpiry,
 			func(result *gocbcore.MutateInResult, err error) {
 				callback(err)
 			})
 	case action.Type == Delete:
-		err = s.DeleteDocument(ctx, s.config.ScopeName, s.config.CollectionName, action.ID, casPtr,
+		err = s.DeleteDocument(ctx, s.config.ScopeName, s.config.CollectionName,
+			action.ID, casPtr,
 			func(result *gocbcore.DeleteResult, err error) {
 				callback(err)
 			})

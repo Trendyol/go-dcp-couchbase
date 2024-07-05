@@ -16,11 +16,21 @@ type CBActionDocument struct {
 	ID                []byte
 	Path              []byte
 	Size              int
+	Expiry            uint32
+	PreserveExpiry    bool
 	DisableAutoCreate bool
 }
 
 func (doc *CBActionDocument) SetCas(cas uint64) {
 	doc.Cas = &cas
+}
+
+func (doc *CBActionDocument) SetExpiry(expiry uint32) {
+	doc.Expiry = expiry
+}
+
+func (doc *CBActionDocument) SetPreserveExpiry(preserveExpiry bool) {
+	doc.PreserveExpiry = preserveExpiry
 }
 
 func (doc *CBActionDocument) SetDisableAutoCreate(value bool) {
