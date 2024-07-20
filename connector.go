@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	dcpCouchbase "github.com/Trendyol/go-dcp/couchbase"
+
 	"github.com/Trendyol/go-dcp/helpers"
 
 	"github.com/Trendyol/go-dcp"
@@ -25,6 +27,7 @@ import (
 type Connector interface {
 	Start()
 	Close()
+	GetDcpClient() dcpCouchbase.Client
 	GetMapperProcessLatencyMs() int64
 }
 
@@ -52,6 +55,10 @@ func (c *connector) Start() {
 func (c *connector) Close() {
 	c.dcp.Close()
 	c.processor.Close()
+}
+
+func (c *connector) GetDcpClient() dcpCouchbase.Client {
+	return c.dcp.GetClient()
 }
 
 func (c *connector) GetMapperProcessLatencyMs() int64 {
