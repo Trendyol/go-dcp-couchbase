@@ -7,8 +7,6 @@ import (
 
 	dcpCouchbase "github.com/Trendyol/go-dcp/couchbase"
 
-	"github.com/Trendyol/go-dcp/helpers"
-
 	"github.com/Trendyol/go-dcp"
 
 	"gopkg.in/yaml.v3"
@@ -47,7 +45,6 @@ type Metric struct {
 func (c *connector) Start() {
 	go func() {
 		<-c.dcp.WaitUntilReady()
-		c.processor.StartProcessor()
 	}()
 	c.dcp.Start()
 }
@@ -103,15 +100,10 @@ func (c *connector) listener(ctx *models.ListenerContext) {
 		return
 	}
 
-	batchSizeLimit := c.config.Couchbase.BatchSizeLimit
-	if len(actions) > batchSizeLimit {
-		chunks := helpers.ChunkSliceWithSize[couchbase.CBActionDocument](actions, batchSizeLimit)
-		lastChunkIndex := len(chunks) - 1
-		for idx, chunk := range chunks {
-			c.processor.AddActions(ctx, e.EventTime, chunk, idx == lastChunkIndex)
-		}
-	} else {
-		c.processor.AddActions(ctx, e.EventTime, actions, true)
+	for i := 0; i < len(actions); i++ {
+		func(idx int) {
+			c.processor.AddAction(ctx, e.EventTime, &actions[idx])
+		}(i)
 	}
 }
 
@@ -144,9 +136,6 @@ func newConnector(cf any, mapper Mapper, sinkResponseHandler couchbase.SinkRespo
 		logger.Log.Error("dcp error: %v", err)
 		return nil, err
 	}
-
-	dcpConfig := dcp.GetConfig()
-	dcpConfig.Checkpoint.Type = "manual"
 
 	connector.dcp = dcp
 

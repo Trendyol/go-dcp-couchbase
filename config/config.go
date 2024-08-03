@@ -3,8 +3,6 @@ package config
 import (
 	"time"
 
-	"github.com/Trendyol/go-dcp/helpers"
-
 	"github.com/Trendyol/go-dcp/config"
 )
 
@@ -14,17 +12,16 @@ const (
 )
 
 type Couchbase struct {
-	BatchByteSizeLimit   any           `yaml:"batchByteSizeLimit"`
+	Username             string        `yaml:"username"`
 	Password             string        `yaml:"password"`
 	BucketName           string        `yaml:"bucketName"`
 	ScopeName            string        `yaml:"scopeName"`
 	CollectionName       string        `yaml:"collectionName"`
-	Username             string        `yaml:"username"`
 	RootCAPath           string        `yaml:"rootCAPath"`
 	Hosts                []string      `yaml:"hosts"`
-	BatchTickerDuration  time.Duration `yaml:"batchTickerDuration"`
+	WritePoolSizePerNode int           `yaml:"writePoolSizePerNode"`
+	MaxInflightRequests  int           `yaml:"maxInflightRequests"`
 	ConnectionTimeout    time.Duration `yaml:"connectionTimeout"`
-	BatchSizeLimit       int           `yaml:"batchSizeLimit"`
 	ConnectionBufferSize uint          `yaml:"connectionBufferSize"`
 	RequestTimeout       time.Duration `yaml:"requestTimeout"`
 	SecureConnection     bool          `yaml:"secureConnection"`
@@ -60,16 +57,12 @@ func (c *Config) applyDefaultConnectionSettings() {
 }
 
 func (c *Config) applyDefaultProcess() {
-	if c.Couchbase.BatchTickerDuration == 0 {
-		c.Couchbase.BatchTickerDuration = 10 * time.Second
+	if c.Couchbase.MaxInflightRequests == 0 {
+		c.Couchbase.MaxInflightRequests = 2048
 	}
 
-	if c.Couchbase.BatchSizeLimit == 0 {
-		c.Couchbase.BatchSizeLimit = 1000
-	}
-
-	if c.Couchbase.BatchByteSizeLimit == nil {
-		c.Couchbase.BatchByteSizeLimit = helpers.ResolveUnionIntOrStringValue("10mb")
+	if c.Couchbase.WritePoolSizePerNode == 0 {
+		c.Couchbase.WritePoolSizePerNode = 1
 	}
 
 	if c.Couchbase.RequestTimeout == 0 {
