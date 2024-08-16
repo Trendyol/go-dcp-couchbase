@@ -5,7 +5,7 @@ go 1.20
 replace github.com/Trendyol/go-dcp-couchbase => ./../..
 
 require (
-	github.com/Trendyol/go-dcp v1.1.50
+	github.com/Trendyol/go-dcp v1.1.51
 	github.com/Trendyol/go-dcp-couchbase v1.0.0
 )
 
