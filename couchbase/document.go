@@ -2,16 +2,23 @@ package couchbase
 
 type CbAction string
 
+type PathValue struct {
+	Path  []byte
+	Value []byte
+}
+
 const (
-	Set        CbAction = "Set"
-	Delete     CbAction = "Delete"
-	MutateIn   CbAction = "MutateIn"
-	DeletePath CbAction = "DeletePath"
+	Set           CbAction = "Set"
+	Delete        CbAction = "Delete"
+	MutateIn      CbAction = "MutateIn"
+	MultiMutateIn CbAction = "MultiMutateIn"
+	DeletePath    CbAction = "DeletePath"
 )
 
 type CBActionDocument struct {
 	Cas               *uint64
 	Type              CbAction
+	PathValues        []PathValue
 	Source            []byte
 	ID                []byte
 	Path              []byte
@@ -51,6 +58,20 @@ func NewSetAction(key []byte, source []byte) CBActionDocument {
 		Source: source,
 		Type:   Set,
 		Size:   len(key) + len(source),
+	}
+}
+
+func NewMultiMutateInAction(key []byte, pathValues []PathValue) CBActionDocument {
+	size := len(key)
+	for _, pv := range pathValues {
+		size += len(pv.Path) + len(pv.Value)
+	}
+
+	return CBActionDocument{
+		ID:         key,
+		PathValues: pathValues,
+		Type:       MultiMutateIn,
+		Size:       size,
 	}
 }
 
