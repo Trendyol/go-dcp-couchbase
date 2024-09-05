@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Trendyol/go-dcp/logger"
+
 	"github.com/Trendyol/go-dcp/helpers"
 
 	"github.com/couchbase/gocbcore/v10/memd"
@@ -165,6 +167,7 @@ func (b *Processor) panicOrGo(action *CBActionDocument, err error) {
 
 func (b *Processor) handleError(action *CBActionDocument, err error) {
 	if b.sinkResponseHandler == nil {
+		logger.Log.Error("error while write, err: %v", err)
 		panic(err)
 	}
 
