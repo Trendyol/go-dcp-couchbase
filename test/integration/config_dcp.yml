@@ -20,4 +20,4 @@ metadata:
     scope: _default
     collection: _default
 api:
-  port: 8081
+  disabled: true
