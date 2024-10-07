@@ -52,6 +52,29 @@ type Client interface {
 		preserveExpiry bool,
 		cb gocbcore.MutateInCallback,
 	) error
+	ArrayAppend(ctx context.Context,
+		scopeName string,
+		collectionName string,
+		id []byte,
+		path []byte,
+		value []byte,
+		flags memd.SubdocDocFlag,
+		cas *gocbcore.Cas,
+		expiry uint32,
+		preserveExpiry bool,
+		cb gocbcore.MutateInCallback,
+	) error
+	Increment(ctx context.Context,
+		scopeName string,
+		collectionName string,
+		id []byte,
+		delta uint64,
+		initial uint64,
+		cas *gocbcore.Cas,
+		expiry uint32,
+		preserveExpiry bool,
+		cb gocbcore.CounterCallback,
+	) error
 	Execute(ctx context.Context, action *CBActionDocument, callback func(err error))
 	Close()
 }
@@ -65,7 +88,7 @@ func (s *client) Connect() error {
 	agent, err := couchbase.CreateAgent(
 		s.config.Hosts, s.config.BucketName, s.config.Username, s.config.Password,
 		s.config.SecureConnection, s.config.RootCAPath,
-		s.config.ConnectionBufferSize, s.config.ConnectionTimeout,
+		s.config.MaxQueueSize, s.config.ConnectionBufferSize, s.config.ConnectionTimeout,
 	)
 	if err != nil {
 		logger.Log.Error("error while connect to target bucket, err: %v", err)
@@ -162,6 +185,78 @@ func (s *client) CreatePath(ctx context.Context,
 
 	_, err := s.agent.MutateIn(options, cb)
 
+	return err
+}
+
+func (s *client) ArrayAppend(ctx context.Context,
+	scopeName string,
+	collectionName string,
+	id []byte,
+	path []byte,
+	value []byte,
+	flags memd.SubdocDocFlag,
+	cas *gocbcore.Cas,
+	expiry uint32,
+	preserveExpiry bool,
+	cb gocbcore.MutateInCallback,
+) error {
+	deadline, _ := ctx.Deadline()
+
+	options := gocbcore.MutateInOptions{
+		Key:   id,
+		Flags: flags,
+		Ops: []gocbcore.SubDocOp{
+			{
+				Op:    memd.SubDocOpArrayPushLast,
+				Value: value,
+				Path:  string(path),
+			},
+		},
+		Expiry:         expiry,
+		PreserveExpiry: preserveExpiry,
+		Deadline:       deadline,
+		ScopeName:      scopeName,
+		CollectionName: collectionName,
+	}
+
+	if cas != nil {
+		options.Cas = *cas
+	}
+
+	_, err := s.agent.MutateIn(options, cb)
+
+	return err
+}
+
+func (s *client) Increment(ctx context.Context,
+	scopeName string,
+	collectionName string,
+	id []byte,
+	delta uint64,
+	initial uint64,
+	cas *gocbcore.Cas,
+	expiry uint32,
+	preserveExpiry bool,
+	cb gocbcore.CounterCallback,
+) error {
+	deadline, _ := ctx.Deadline()
+
+	options := gocbcore.CounterOptions{
+		Key:            id,
+		Delta:          delta,
+		Initial:        initial,
+		Expiry:         expiry,
+		CollectionName: collectionName,
+		ScopeName:      scopeName,
+		Deadline:       deadline,
+		PreserveExpiry: preserveExpiry,
+	}
+
+	if cas != nil {
+		options.Cas = *cas
+	}
+
+	_, err := s.agent.Increment(options, cb)
 	return err
 }
 
@@ -283,6 +378,17 @@ func (s *client) Execute(ctx context.Context, action *CBActionDocument, callback
 			func(result *gocbcore.MutateInResult, err error) {
 				callback(err)
 			})
+	case action.Type == ArrayAppend:
+		flags := memd.SubdocDocFlagMkDoc
+		if action.DisableAutoCreate {
+			flags = memd.SubdocDocFlagNone
+		}
+
+		err = s.ArrayAppend(ctx, s.config.ScopeName, s.config.CollectionName,
+			action.ID, action.Path, action.Source, flags, casPtr, action.Expiry, action.PreserveExpiry,
+			func(result *gocbcore.MutateInResult, err error) {
+				callback(err)
+			})
 	case action.Type == DeletePath:
 		err = s.DeletePath(ctx, s.config.ScopeName, s.config.CollectionName,
 			action.ID, action.Path, casPtr, action.Expiry, action.PreserveExpiry,
@@ -293,6 +399,12 @@ func (s *client) Execute(ctx context.Context, action *CBActionDocument, callback
 		err = s.DeleteDocument(ctx, s.config.ScopeName, s.config.CollectionName,
 			action.ID, casPtr,
 			func(result *gocbcore.DeleteResult, err error) {
+				callback(err)
+			})
+	case action.Type == Increment:
+		err = s.Increment(ctx, s.config.ScopeName, s.config.CollectionName,
+			action.ID, action.Delta, action.Initial, casPtr, action.Expiry, action.PreserveExpiry,
+			func(result *gocbcore.CounterResult, err error) {
 				callback(err)
 			})
 	default:
