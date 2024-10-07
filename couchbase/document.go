@@ -104,6 +104,7 @@ func NewIncrementAction(key []byte, initial uint64, delta uint64) CBActionDocume
 		Type:    Increment,
 		Initial: initial,
 		Delta:   delta,
+		Size:    len(key),
 	}
 }
 
