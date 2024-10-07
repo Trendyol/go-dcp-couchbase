@@ -25,6 +25,7 @@ type Couchbase struct {
 	BatchTickerDuration  time.Duration `yaml:"batchTickerDuration"`
 	ConnectionTimeout    time.Duration `yaml:"connectionTimeout"`
 	BatchSizeLimit       int           `yaml:"batchSizeLimit"`
+	MaxQueueSize         int           `yaml:"maxQueueSize"`
 	ConnectionBufferSize uint          `yaml:"connectionBufferSize"`
 	RequestTimeout       time.Duration `yaml:"requestTimeout"`
 	SecureConnection     bool          `yaml:"secureConnection"`
@@ -57,6 +58,10 @@ func (c *Config) applyDefaultScopeName() {
 func (c *Config) applyDefaultConnectionSettings() {
 	c.Couchbase.ConnectionTimeout = 5 * time.Second
 	c.Couchbase.ConnectionBufferSize = 20971520
+
+	if c.Couchbase.MaxQueueSize == 0 {
+		c.Couchbase.MaxQueueSize = 2048
+	}
 }
 
 func (c *Config) applyDefaultProcess() {
