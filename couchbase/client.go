@@ -137,6 +137,7 @@ func (s *client) CreateMultiPath(ctx context.Context,
 		Deadline:       deadline,
 		ScopeName:      scopeName,
 		CollectionName: collectionName,
+		RetryStrategy:  gocbcore.NewBestEffortRetryStrategy(nil),
 	}
 
 	if cas != nil {
@@ -177,6 +178,7 @@ func (s *client) CreatePath(ctx context.Context,
 		Deadline:       deadline,
 		ScopeName:      scopeName,
 		CollectionName: collectionName,
+		RetryStrategy:  gocbcore.NewBestEffortRetryStrategy(nil),
 	}
 
 	if cas != nil {
@@ -217,6 +219,7 @@ func (s *client) ArrayAppend(ctx context.Context,
 		Deadline:       deadline,
 		ScopeName:      scopeName,
 		CollectionName: collectionName,
+		RetryStrategy:  gocbcore.NewBestEffortRetryStrategy(nil),
 	}
 
 	if cas != nil {
@@ -250,6 +253,7 @@ func (s *client) Increment(ctx context.Context,
 		ScopeName:      scopeName,
 		Deadline:       deadline,
 		PreserveExpiry: preserveExpiry,
+		RetryStrategy:  gocbcore.NewBestEffortRetryStrategy(nil),
 	}
 
 	if cas != nil {
@@ -279,6 +283,7 @@ func (s *client) CreateDocument(ctx context.Context,
 		Expiry:         expiry,
 		ScopeName:      scopeName,
 		CollectionName: collectionName,
+		RetryStrategy:  gocbcore.NewBestEffortRetryStrategy(nil),
 	}, cb)
 
 	return err
@@ -298,6 +303,7 @@ func (s *client) DeleteDocument(ctx context.Context,
 		Deadline:       deadline,
 		ScopeName:      scopeName,
 		CollectionName: collectionName,
+		RetryStrategy:  gocbcore.NewBestEffortRetryStrategy(nil),
 	}
 
 	if cas != nil {
@@ -334,6 +340,7 @@ func (s *client) DeletePath(ctx context.Context,
 		Deadline:       deadline,
 		ScopeName:      scopeName,
 		CollectionName: collectionName,
+		RetryStrategy:  gocbcore.NewBestEffortRetryStrategy(nil),
 	}
 
 	if cas != nil {
