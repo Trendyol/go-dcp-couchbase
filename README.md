@@ -10,7 +10,7 @@ Couchbase bucket in near real-time.
 * **Less resource usage** and **higher throughput**.
 * **Update multiple documents** for a DCP event(see [Example](#example)).
 * Handling different DCP events such as **expiration, deletion and mutation**(see [Example](#example)).
-* **Managing batch configurations** such as maximum batch size, batch bytes, batch ticker durations.
+* **Managing inflight request size to Couchbase.
 * **Scale up and down** by custom membership algorithms(Couchbase, KubernetesHa, Kubernetes StatefulSet or
   Static, see [examples](https://github.com/Trendyol/go-dcp#examples)).
 * **Easily manageable configurations**.
@@ -68,7 +68,6 @@ func main() {
       Username:       "user",
       Password:       "password",
       BucketName:     "dcp-test-backup",
-      BatchSizeLimit: 10,
       RequestTimeout: 10 * time.Second,
     },
   }).SetMapper(dcpcouchbase.DefaultMapper).Build()
@@ -89,23 +88,22 @@ Check out on [go-dcp](https://github.com/Trendyol/go-dcp#configuration)
 
 ### Couchbase Specific Configuration
 
-| Variable                         | Type          | Required | Default  | Description                                                                                                                                              |
-|----------------------------------|---------------|----------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `couchbase.hosts`                | []string      | yes      |          | Couchbase connection urls                                                                                                                                |
-| `couchbase.username`             | string        | yes      |          | Defines Couchbase username                                                                                                                               |
-| `couchbase.password`             | string        | yes      |          | Defines Couchbase password                                                                                                                               |
-| `couchbase.bucketName`           | string        | yes      |          | Defines Couchbase bucket name                                                                                                                            |
-| `couchbase.scopeName`            | string        | no       | _default | Defines Couchbase scope name                                                                                                                             |
-| `couchbase.collectionName`       | string        | no       | _default | Defines Couchbase collection name                                                                                                                        |
-| `couchbase.batchSizeLimit`       | int           | no       | 1000     | Maximum message count for batch, if exceed flush will be triggered.                                                                                      |
-| `couchbase.batchTickerDuration`  | time.Duration | no       | 10s      | Batch is being flushed automatically at specific time intervals for long waiting messages in batch.                                                      |
-| `couchbase.batchByteSizeLimit`   | int, string   | no       | 10mb     | Maximum size(byte) for batch, if exceed flush will be triggered. `10mb` is default.                                                                      |
-| `couchbase.requestTimeout`       | time.Duration | no       | 3s       | Maximum request waiting time. Value type milliseconds.                                                                                                   |
-| `couchbase.secureConnection`     | bool          | no       | false    | Enables secure connection.                                                                                                                               |
-| `couchbase.rootCAPath`           | string        | no       | false    | Defines root CA path.                                                                                                                                    |
-| `couchbase.connectionBufferSize` | uint          | no       | 20971520 | Defines connectionBufferSize.                                                                                                                            |
+| Variable                         | Type          | Required | Default  | Description                         |                                                           
+|----------------------------------|---------------|----------|----------|-------------------------------------|
+| `couchbase.hosts`                | []string      | yes      |          | Couchbase connection urls           |
+| `couchbase.username`             | string        | yes      |          | Defines Couchbase username          |
+| `couchbase.password`             | string        | yes      |          | Defines Couchbase password          |
+| `couchbase.bucketName`           | string        | yes      |          | Defines Couchbase bucket name       |
+| `couchbase.scopeName`            | string        | no       | _default | Defines Couchbase scope name        |
+| `couchbase.collectionName`       | string        | no       | _default | Defines Couchbase collection name   |
+| `couchbase.maxInflightRequests`  | int           | no       | 2048     | Maximum message count for Couchbase |
+| `couchbase.writePoolSizePerNode` | int           | no       | 1        | Write connection pool size per node |
+| `couchbase.requestTimeout`       | time.Duration | no       | 3s       | Maximum request waiting time        |
+| `couchbase.secureConnection`     | bool          | no       | false    | Enables secure connection.          |
+| `couchbase.rootCAPath`           | string        | no       | false    | Defines root CA path.               |
 | `couchbase.maxQueueSize`         | int           | no       | 2048     | The maximum number of requests that can be queued waiting to be sent to a node. `2048` is default. Check this if you get queue overflowed or queue full. |
-| `couchbase.connectionTimeout`    | time.Duration | no       | 5s       | Defines connectionTimeout.                                                                                                                               |
+| `couchbase.connectionBufferSize` | uint          | no       | 20971520 | Defines connectionBufferSize.       |
+| `couchbase.connectionTimeout`    | time.Duration | no       | 5s       | Defines connectionTimeout.          |
 
 ## Exposed metrics
 
