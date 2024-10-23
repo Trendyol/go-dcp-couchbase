@@ -144,9 +144,6 @@ func newConnector(cf any, mapper Mapper, sinkResponseHandler couchbase.SinkRespo
 	copyOfConfig := cfg.Couchbase
 	printConfiguration(copyOfConfig)
 
-	dcpConfig := dcp.GetConfig()
-	dcpConfig.Checkpoint.Type = "manual"
-
 	connector.dcp = dcp
 
 	client := couchbase.NewClient(&cfg.Couchbase)
