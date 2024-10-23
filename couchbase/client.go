@@ -52,6 +52,29 @@ type Client interface {
 		preserveExpiry bool,
 		cb gocbcore.MutateInCallback,
 	) error
+	ArrayAppend(ctx context.Context,
+		scopeName string,
+		collectionName string,
+		id []byte,
+		path []byte,
+		value []byte,
+		flags memd.SubdocDocFlag,
+		cas *gocbcore.Cas,
+		expiry uint32,
+		preserveExpiry bool,
+		cb gocbcore.MutateInCallback,
+	) error
+	Increment(ctx context.Context,
+		scopeName string,
+		collectionName string,
+		id []byte,
+		delta uint64,
+		initial uint64,
+		cas *gocbcore.Cas,
+		expiry uint32,
+		preserveExpiry bool,
+		cb gocbcore.CounterCallback,
+	) error
 	Execute(ctx context.Context, action *CBActionDocument, callback func(err error))
 	Close()
 }
@@ -83,6 +106,50 @@ func (s *client) GetAgent() *gocbcore.Agent {
 	return s.agent
 }
 
+func (s *client) CreateMultiPath(ctx context.Context,
+	scopeName string,
+	collectionName string,
+	id []byte,
+	pathValues []PathValue,
+	flags memd.SubdocDocFlag,
+	cas *gocbcore.Cas,
+	expiry uint32,
+	preserveExpiry bool,
+	cb gocbcore.MutateInCallback,
+) error {
+	deadline, _ := ctx.Deadline()
+
+	ops := make([]gocbcore.SubDocOp, len(pathValues))
+
+	for i, pv := range pathValues {
+		ops[i] = gocbcore.SubDocOp{
+			Op:    memd.SubDocOpDictSet,
+			Path:  string(pv.Path),
+			Value: pv.Value,
+		}
+	}
+
+	options := gocbcore.MutateInOptions{
+		Key:            id,
+		Flags:          flags,
+		Ops:            ops,
+		Expiry:         expiry,
+		PreserveExpiry: preserveExpiry,
+		Deadline:       deadline,
+		ScopeName:      scopeName,
+		CollectionName: collectionName,
+		RetryStrategy:  gocbcore.NewBestEffortRetryStrategy(nil),
+	}
+
+	if cas != nil {
+		options.Cas = *cas
+	}
+
+	_, err := s.agent.MutateIn(options, cb)
+
+	return err
+}
+
 func (s *client) CreatePath(ctx context.Context,
 	scopeName string,
 	collectionName string,
@@ -112,6 +179,7 @@ func (s *client) CreatePath(ctx context.Context,
 		Deadline:       deadline,
 		ScopeName:      scopeName,
 		CollectionName: collectionName,
+		RetryStrategy:  gocbcore.NewBestEffortRetryStrategy(nil),
 	}
 
 	if cas != nil {
@@ -120,6 +188,80 @@ func (s *client) CreatePath(ctx context.Context,
 
 	_, err := s.agent.MutateIn(options, cb)
 
+	return err
+}
+
+func (s *client) ArrayAppend(ctx context.Context,
+	scopeName string,
+	collectionName string,
+	id []byte,
+	path []byte,
+	value []byte,
+	flags memd.SubdocDocFlag,
+	cas *gocbcore.Cas,
+	expiry uint32,
+	preserveExpiry bool,
+	cb gocbcore.MutateInCallback,
+) error {
+	deadline, _ := ctx.Deadline()
+
+	options := gocbcore.MutateInOptions{
+		Key:   id,
+		Flags: flags,
+		Ops: []gocbcore.SubDocOp{
+			{
+				Op:    memd.SubDocOpArrayPushLast,
+				Value: value,
+				Path:  string(path),
+			},
+		},
+		Expiry:         expiry,
+		PreserveExpiry: preserveExpiry,
+		Deadline:       deadline,
+		ScopeName:      scopeName,
+		CollectionName: collectionName,
+		RetryStrategy:  gocbcore.NewBestEffortRetryStrategy(nil),
+	}
+
+	if cas != nil {
+		options.Cas = *cas
+	}
+
+	_, err := s.agent.MutateIn(options, cb)
+
+	return err
+}
+
+func (s *client) Increment(ctx context.Context,
+	scopeName string,
+	collectionName string,
+	id []byte,
+	delta uint64,
+	initial uint64,
+	cas *gocbcore.Cas,
+	expiry uint32,
+	preserveExpiry bool,
+	cb gocbcore.CounterCallback,
+) error {
+	deadline, _ := ctx.Deadline()
+
+	options := gocbcore.CounterOptions{
+		Key:            id,
+		Delta:          delta,
+		Initial:        initial,
+		Expiry:         expiry,
+		CollectionName: collectionName,
+		ScopeName:      scopeName,
+		Deadline:       deadline,
+		PreserveExpiry: preserveExpiry,
+		RetryStrategy:  gocbcore.NewBestEffortRetryStrategy(nil),
+	}
+
+	if cas != nil {
+		options.Cas = *cas
+	}
+
+	_, err := s.agent.Increment(options, cb)
 	return err
 }
 
@@ -142,6 +284,7 @@ func (s *client) CreateDocument(ctx context.Context,
 		Expiry:         expiry,
 		ScopeName:      scopeName,
 		CollectionName: collectionName,
+		RetryStrategy:  gocbcore.NewBestEffortRetryStrategy(nil),
 	}, cb)
 
 	return err
@@ -161,6 +304,7 @@ func (s *client) DeleteDocument(ctx context.Context,
 		Deadline:       deadline,
 		ScopeName:      scopeName,
 		CollectionName: collectionName,
+		RetryStrategy:  gocbcore.NewBestEffortRetryStrategy(nil),
 	}
 
 	if cas != nil {
@@ -197,6 +341,7 @@ func (s *client) DeletePath(ctx context.Context,
 		Deadline:       deadline,
 		ScopeName:      scopeName,
 		CollectionName: collectionName,
+		RetryStrategy:  gocbcore.NewBestEffortRetryStrategy(nil),
 	}
 
 	if cas != nil {
@@ -230,6 +375,28 @@ func (s *client) Execute(ctx context.Context, action *CBActionDocument, callback
 			func(result *gocbcore.MutateInResult, err error) {
 				callback(err)
 			})
+	case action.Type == MultiMutateIn:
+		flags := memd.SubdocDocFlagMkDoc
+		if action.DisableAutoCreate {
+			flags = memd.SubdocDocFlagNone
+		}
+
+		err = s.CreateMultiPath(ctx, s.config.ScopeName, s.config.CollectionName,
+			action.ID, action.PathValues, flags, casPtr, action.Expiry, action.PreserveExpiry,
+			func(result *gocbcore.MutateInResult, err error) {
+				callback(err)
+			})
+	case action.Type == ArrayAppend:
+		flags := memd.SubdocDocFlagMkDoc
+		if action.DisableAutoCreate {
+			flags = memd.SubdocDocFlagNone
+		}
+
+		err = s.ArrayAppend(ctx, s.config.ScopeName, s.config.CollectionName,
+			action.ID, action.Path, action.Source, flags, casPtr, action.Expiry, action.PreserveExpiry,
+			func(result *gocbcore.MutateInResult, err error) {
+				callback(err)
+			})
 	case action.Type == DeletePath:
 		err = s.DeletePath(ctx, s.config.ScopeName, s.config.CollectionName,
 			action.ID, action.Path, casPtr, action.Expiry, action.PreserveExpiry,
@@ -240,6 +407,12 @@ func (s *client) Execute(ctx context.Context, action *CBActionDocument, callback
 		err = s.DeleteDocument(ctx, s.config.ScopeName, s.config.CollectionName,
 			action.ID, casPtr,
 			func(result *gocbcore.DeleteResult, err error) {
+				callback(err)
+			})
+	case action.Type == Increment:
+		err = s.Increment(ctx, s.config.ScopeName, s.config.CollectionName,
+			action.ID, action.Delta, action.Initial, casPtr, action.Expiry, action.PreserveExpiry,
+			func(result *gocbcore.CounterResult, err error) {
 				callback(err)
 			})
 	default:

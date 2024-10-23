@@ -101,6 +101,7 @@ Check out on [go-dcp](https://github.com/Trendyol/go-dcp#configuration)
 | `couchbase.requestTimeout`       | time.Duration | no       | 3s       | Maximum request waiting time        |
 | `couchbase.secureConnection`     | bool          | no       | false    | Enables secure connection.          |
 | `couchbase.rootCAPath`           | string        | no       | false    | Defines root CA path.               |
+| `couchbase.maxQueueSize`         | int           | no       | 2048     | The maximum number of requests that can be queued waiting to be sent to a node. `2048` is default. Check this if you get queue overflowed or queue full. |
 | `couchbase.connectionBufferSize` | uint          | no       | 20971520 | Defines connectionBufferSize.       |
 | `couchbase.connectionTimeout`    | time.Duration | no       | 5s       | Defines connectionTimeout.          |
 

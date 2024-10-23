@@ -35,6 +35,7 @@ func (s *targetClient) Get(ctx context.Context,
 		Deadline:       deadline,
 		ScopeName:      s.scopeName,
 		CollectionName: s.collectionName,
+		RetryStrategy:  gocbcore.NewBestEffortRetryStrategy(nil),
 	}, func(result *gocbcore.GetResult, err error) {
 		if result == nil || err != nil {
 			cb(nil, err)

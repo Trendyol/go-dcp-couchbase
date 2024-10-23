@@ -5,6 +5,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Trendyol/go-dcp/logger"
+
 	"github.com/couchbase/gocbcore/v10/memd"
 
 	"github.com/Trendyol/go-dcp-couchbase/config"
@@ -109,6 +111,7 @@ func (b *Processor) panicOrGo(listenerCtx *models.ListenerContext, action *CBAct
 
 func (b *Processor) handleError(action *CBActionDocument, err error) {
 	if b.sinkResponseHandler == nil {
+		logger.Log.Error("error while write, err: %v", err)
 		panic(err)
 	}
 

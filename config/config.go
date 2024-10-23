@@ -22,6 +22,7 @@ type Couchbase struct {
 	WritePoolSizePerNode int           `yaml:"writePoolSizePerNode"`
 	MaxInflightRequests  int           `yaml:"maxInflightRequests"`
 	ConnectionTimeout    time.Duration `yaml:"connectionTimeout"`
+	MaxQueueSize         int           `yaml:"maxQueueSize"`
 	ConnectionBufferSize uint          `yaml:"connectionBufferSize"`
 	RequestTimeout       time.Duration `yaml:"requestTimeout"`
 	SecureConnection     bool          `yaml:"secureConnection"`
@@ -54,6 +55,10 @@ func (c *Config) applyDefaultScopeName() {
 func (c *Config) applyDefaultConnectionSettings() {
 	c.Couchbase.ConnectionTimeout = 5 * time.Second
 	c.Couchbase.ConnectionBufferSize = 20971520
+
+	if c.Couchbase.MaxQueueSize == 0 {
+		c.Couchbase.MaxQueueSize = 2048
+	}
 }
 
 func (c *Config) applyDefaultProcess() {

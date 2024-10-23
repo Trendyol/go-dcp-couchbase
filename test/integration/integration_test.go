@@ -17,6 +17,7 @@ func TestCouchbase(t *testing.T) {
 		SetMapper(dcpcouchbase.DefaultMapper).
 		Build()
 	if err != nil {
+		t.Fatal(err)
 		return
 	}
 

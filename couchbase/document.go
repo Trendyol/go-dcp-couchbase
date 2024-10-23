@@ -2,16 +2,25 @@ package couchbase
 
 type CbAction string
 
+type PathValue struct {
+	Path  []byte
+	Value []byte
+}
+
 const (
-	Set        CbAction = "Set"
-	Delete     CbAction = "Delete"
-	MutateIn   CbAction = "MutateIn"
-	DeletePath CbAction = "DeletePath"
+	Set           CbAction = "Set"
+	Delete        CbAction = "Delete"
+	MutateIn      CbAction = "MutateIn"
+	MultiMutateIn CbAction = "MultiMutateIn"
+	DeletePath    CbAction = "DeletePath"
+	ArrayAppend   CbAction = "ArrayAppend"
+	Increment     CbAction = "Increment"
 )
 
 type CBActionDocument struct {
 	Cas               *uint64
 	Type              CbAction
+	PathValues        []PathValue
 	Source            []byte
 	ID                []byte
 	Path              []byte
@@ -19,6 +28,8 @@ type CBActionDocument struct {
 	Expiry            uint32
 	PreserveExpiry    bool
 	DisableAutoCreate bool
+	Initial           uint64
+	Delta             uint64
 }
 
 func (doc *CBActionDocument) SetCas(cas uint64) {
@@ -54,6 +65,20 @@ func NewSetAction(key []byte, source []byte) CBActionDocument {
 	}
 }
 
+func NewMultiMutateInAction(key []byte, pathValues []PathValue) CBActionDocument {
+	size := len(key)
+	for _, pv := range pathValues {
+		size += len(pv.Path) + len(pv.Value)
+	}
+
+	return CBActionDocument{
+		ID:         key,
+		PathValues: pathValues,
+		Type:       MultiMutateIn,
+		Size:       size,
+	}
+}
+
 func NewMutateInAction(key []byte, path []byte, source []byte) CBActionDocument {
 	return CBActionDocument{
 		ID:     key,
@@ -70,5 +95,25 @@ func NewDeletePathAction(key []byte, path []byte) CBActionDocument {
 		Type: DeletePath,
 		Path: path,
 		Size: len(key) + len(path),
+	}
+}
+
+func NewIncrementAction(key []byte, initial uint64, delta uint64) CBActionDocument {
+	return CBActionDocument{
+		ID:      key,
+		Type:    Increment,
+		Initial: initial,
+		Delta:   delta,
+		Size:    len(key),
+	}
+}
+
+func NewArrayAppendAction(key []byte, path []byte, source []byte) CBActionDocument {
+	return CBActionDocument{
+		ID:     key,
+		Source: source,
+		Type:   ArrayAppend,
+		Path:   path,
+		Size:   len(key) + len(path) + len(source),
 	}
 }
