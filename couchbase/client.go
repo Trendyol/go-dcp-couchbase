@@ -88,7 +88,8 @@ func (s *client) Connect() error {
 	agent, err := couchbase.CreateAgent(
 		s.config.Hosts, s.config.BucketName, s.config.Username, s.config.Password,
 		s.config.SecureConnection, s.config.RootCAPath,
-		s.config.MaxQueueSize, s.config.ConnectionBufferSize, s.config.ConnectionTimeout,
+		s.config.MaxInflightRequests, s.config.WritePoolSizePerNode,
+		s.config.ConnectionBufferSize, s.config.ConnectionTimeout,
 	)
 	if err != nil {
 		logger.Log.Error("error while connect to target bucket, err: %v", err)
