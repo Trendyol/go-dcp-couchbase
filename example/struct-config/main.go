@@ -38,6 +38,7 @@ func main() {
 			Username:       "user",
 			Password:       "password",
 			BucketName:     "dcp-test-backup",
+			BatchSizeLimit: 10,
 			RequestTimeout: 10 * time.Second,
 		},
 	}).SetMapper(dcpcouchbase.DefaultMapper).Build()

@@ -3,7 +3,10 @@ package couchbase
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
+
+	"github.com/Trendyol/go-dcp/helpers"
 
 	"github.com/Trendyol/go-dcp/logger"
 
@@ -21,13 +24,24 @@ type Processor struct {
 	client              Client
 	metric              *Metric
 	dcpCheckpointCommit func()
-	listenerCtxCh       chan *models.ListenerContext
+	inflightCh          chan struct{}
+	batchTicker         *time.Ticker
+	batch               []CBActionDocument
 	requestTimeout      time.Duration
+	batchTickerDuration time.Duration
+	batchByteSizeLimit  int
+	batchByteSize       int
+	batchSizeLimit      int
+	batchSize           int
+	flushLock           sync.Mutex
 	isDcpRebalancing    bool
 }
 
 type Metric struct {
-	ProcessLatencyMs int64
+	ProcessLatencyMs            int64
+	BulkRequestProcessLatencyMs int64
+	BulkRequestSize             int64
+	BulkRequestByteSize         int64
 }
 
 func NewProcessor(
@@ -44,49 +58,89 @@ func NewProcessor(
 		metric:              &Metric{},
 		sinkResponseHandler: sinkResponseHandler,
 		targetClient:        targetClient,
-		listenerCtxCh:       make(chan *models.ListenerContext, config.Couchbase.MaxInflightRequests),
+		inflightCh:          make(chan struct{}, config.Couchbase.MaxInflightRequests),
+		batchTicker:         time.NewTicker(config.Couchbase.BatchTickerDuration),
+		batchSizeLimit:      config.Couchbase.BatchSizeLimit,
+		batchByteSizeLimit:  helpers.ResolveUnionIntOrStringValue(config.Couchbase.BatchByteSizeLimit),
+		batchTickerDuration: config.Couchbase.BatchTickerDuration,
 	}
 
 	return processor, nil
 }
 
+func (b *Processor) StartProcessor() {
+	for range b.batchTicker.C {
+		b.flushMessages()
+	}
+}
+
 func (b *Processor) Close() {
+	b.batchTicker.Stop()
+	b.flushMessages()
 	b.client.Close()
 }
 
-func (b *Processor) PrepareStartRebalancing() {
-	b.isDcpRebalancing = true
-}
-
-func (b *Processor) PrepareEndRebalancing() {
-	b.isDcpRebalancing = false
-}
-
-func (b *Processor) AddAction(
-	listenerCtx *models.ListenerContext,
-	eventTime time.Time,
-	action *CBActionDocument,
-) {
-	b.metric.ProcessLatencyMs = time.Since(eventTime).Milliseconds()
-
+func (b *Processor) flushMessages() {
+	b.flushLock.Lock()
+	defer b.flushLock.Unlock()
 	if b.isDcpRebalancing {
 		return
 	}
+	if len(b.batch) > 0 {
+		b.bulkRequest()
+		b.batchTicker.Reset(b.batchTickerDuration)
+		b.batch = b.batch[:0]
+		b.batchSize = 0
+		b.batchByteSize = 0
+	}
+	b.dcpCheckpointCommit()
+}
 
-	b.listenerCtxCh <- listenerCtx
-	ctx, cancel := context.WithTimeout(context.Background(), b.requestTimeout)
-	b.client.Execute(ctx, action, func(err error) {
-		lCtx := <-b.listenerCtxCh
-		cancel()
-		go b.panicOrGo(lCtx, action, err)
-	})
+func (b *Processor) PrepareStartRebalancing() {
+	b.flushLock.Lock()
+	defer b.flushLock.Unlock()
+	b.isDcpRebalancing = true
+	b.batch = b.batch[:0]
+	b.batchSize = 0
+	b.batchByteSize = 0
+}
+
+func (b *Processor) PrepareEndRebalancing() {
+	b.flushLock.Lock()
+	defer b.flushLock.Unlock()
+	b.isDcpRebalancing = false
+}
+
+func (b *Processor) AddActions(
+	ctx *models.ListenerContext,
+	eventTime time.Time,
+	actions []CBActionDocument,
+	isLastChunk bool,
+) {
+	b.flushLock.Lock()
+	b.batch = append(b.batch, actions...)
+	b.batchSize += len(actions)
+	for _, action := range actions {
+		b.batchByteSize += action.Size
+	}
+	if isLastChunk {
+		ctx.Ack()
+	}
+	b.flushLock.Unlock()
+
+	if isLastChunk {
+		b.metric.ProcessLatencyMs = time.Since(eventTime).Milliseconds()
+	}
+	if b.batchSize >= b.batchSizeLimit || b.batchByteSize >= b.batchByteSizeLimit {
+		b.flushMessages()
+	}
 }
 
 func (b *Processor) GetMetric() *Metric {
 	return b.metric
 }
 
-func (b *Processor) panicOrGo(listenerCtx *models.ListenerContext, action *CBActionDocument, err error) {
+func (b *Processor) panicOrGo(action *CBActionDocument, err error) {
 	isRequestSuccessful := false
 	if err == nil {
 		isRequestSuccessful = true
@@ -102,7 +156,6 @@ func (b *Processor) panicOrGo(listenerCtx *models.ListenerContext, action *CBAct
 
 	if isRequestSuccessful {
 		b.handleSuccess(action)
-		listenerCtx.Ack()
 		return
 	}
 
@@ -123,8 +176,10 @@ func (b *Processor) handleError(action *CBActionDocument, err error) {
 	s.Retry = func(ctx context.Context) error {
 		errCh := make(chan error, 1)
 
+		b.inflightCh <- struct{}{}
 		b.client.Execute(ctx, s.Action, func(err error) {
 			errCh <- err
+			<-b.inflightCh
 		})
 
 		return <-errCh
@@ -141,12 +196,40 @@ func (b *Processor) handleSuccess(action *CBActionDocument) {
 		s.Retry = func(ctx context.Context) error {
 			errCh := make(chan error, 1)
 
+			b.inflightCh <- struct{}{}
 			b.client.Execute(ctx, s.Action, func(err error) {
 				errCh <- err
+				<-b.inflightCh
 			})
 
 			return <-errCh
 		}
 		b.sinkResponseHandler.OnSuccess(s)
 	}
+}
+
+func (b *Processor) handleResponse(idx int, wg *sync.WaitGroup, err error) {
+	b.panicOrGo(&b.batch[idx], err)
+	wg.Done()
+}
+
+func (b *Processor) bulkRequest() {
+	startedTime := time.Now()
+	ctx, cancel := context.WithTimeout(context.Background(), b.requestTimeout)
+	defer cancel()
+	var wg sync.WaitGroup
+	wg.Add(len(b.batch))
+	for i := 0; i < len(b.batch); i++ {
+		func(idx int) {
+			b.inflightCh <- struct{}{}
+			b.client.Execute(ctx, &b.batch[idx], func(err error) {
+				go b.handleResponse(idx, &wg, err)
+				<-b.inflightCh
+			})
+		}(i)
+	}
+	wg.Wait()
+	b.metric.BulkRequestProcessLatencyMs = time.Since(startedTime).Milliseconds()
+	b.metric.BulkRequestSize = int64(b.batchSize)
+	b.metric.BulkRequestByteSize = int64(b.batchByteSize)
 }

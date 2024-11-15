@@ -8,7 +8,7 @@ retract (
 )
 
 require (
-	github.com/Trendyol/go-dcp v1.2.0-rc.3
+	github.com/Trendyol/go-dcp v1.2.0-rc.4
 	github.com/couchbase/gocbcore/v10 v10.5.2
 	github.com/json-iterator/go v1.1.12
 	github.com/prometheus/client_golang v1.20.5
@@ -54,7 +54,7 @@ require (
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	golang.org/x/net v0.30.0 // indirect
 	golang.org/x/oauth2 v0.22.0 // indirect
-	golang.org/x/sync v0.8.0 // indirect
+	golang.org/x/sync v0.9.0 // indirect
 	golang.org/x/sys v0.26.0 // indirect
 	golang.org/x/term v0.25.0 // indirect
 	golang.org/x/text v0.19.0 // indirect
