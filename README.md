@@ -1,8 +1,4 @@
-
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Trendyol/go-dcp-couchbase/badge)](https://scorecard.dev/viewer/?uri=github.com/Trendyol/go-dcp-couchbase)
-# Go Dcp Couchbase
-
-[![Go Reference](https://pkg.go.dev/badge/github.com/Trendyol/go-dcp-couchbase.svg)](https://pkg.go.dev/github.com/Trendyol/go-dcp-couchbase) [![Go Report Card](https://goreportcard.com/badge/github.com/Trendyol/go-dcp-couchbase)](https://goreportcard.com/report/github.com/Trendyol/go-dcp-couchbase)
+# Go Dcp Couchbase [![Go Reference](https://pkg.go.dev/badge/github.com/Trendyol/go-dcp-couchbase.svg)](https://pkg.go.dev/github.com/Trendyol/go-dcp-couchbase) [![Go Report Card](https://goreportcard.com/badge/github.com/Trendyol/go-dcp-couchbase)](https://goreportcard.com/report/github.com/Trendyol/go-dcp-couchbase) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Trendyol/go-dcp-couchbase/badge)](https://scorecard.dev/viewer/?uri=github.com/Trendyol/go-dcp-couchbase)
 
 **Go Dcp Couchbase** streams documents from Couchbase Database Change Protocol (DCP) and writes to
 Couchbase bucket in near real-time.
