@@ -70,6 +70,9 @@ func (c *connector) GetMapperProcessLatencyMs() int64 {
 }
 
 func (c *connector) listener(ctx *models.ListenerContext) {
+	listenerTrace := ctx.ListenerTracerComponent.InitializeListenerTrace("Listen", map[string]interface{}{})
+	defer listenerTrace.Finish()
+
 	var e couchbase.Event
 	switch event := ctx.Event.(type) {
 	case models.DcpMutation:
@@ -95,8 +98,9 @@ func (c *connector) listener(ctx *models.ListenerContext) {
 
 	actions := c.mapper(
 		couchbase.EventContext{
-			TargetClient: c.targetClient,
-			Event:        e,
+			TargetClient:  c.targetClient,
+			Event:         e,
+			ListenerTrace: listenerTrace,
 		},
 	)
 
