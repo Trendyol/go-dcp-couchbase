@@ -183,6 +183,7 @@ func newConnector(cf any, mapper Mapper, sinkResponseHandler couchbase.SinkRespo
 	connector.processor = processor
 	connector.dcp.SetEventHandler(
 		&DcpEventHandler{
+			isFinite:  dcpConfig.IsDcpModeFinite(),
 			processor: connector.processor,
 		})
 

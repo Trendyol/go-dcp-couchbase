@@ -6,6 +6,7 @@ import (
 
 type DcpEventHandler struct {
 	processor *couchbase.Processor
+	isFinite  bool
 }
 
 func (d *DcpEventHandler) BeforeRebalanceStart() {
@@ -28,6 +29,9 @@ func (d *DcpEventHandler) AfterStreamStart() {
 }
 
 func (d *DcpEventHandler) BeforeStreamStop() {
+	if d.isFinite {
+		return
+	}
 	d.processor.PrepareStartRebalancing()
 }
 
