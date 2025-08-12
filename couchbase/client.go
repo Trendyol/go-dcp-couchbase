@@ -357,14 +357,14 @@ func (s *client) Execute(ctx context.Context, action *CBActionDocument, callback
 	var err error
 	casPtr := (*gocbcore.Cas)(action.Cas)
 
-	switch {
-	case action.Type == Set:
+	switch action.Type {
+	case Set:
 		err = s.CreateDocument(ctx, s.config.ScopeName, s.config.CollectionName,
 			action.ID, action.Source, 0, action.Expiry,
 			func(result *gocbcore.StoreResult, err error) {
 				callback(err)
 			})
-	case action.Type == MutateIn:
+	case MutateIn:
 		flags := memd.SubdocDocFlagMkDoc
 		if action.DisableAutoCreate {
 			flags = memd.SubdocDocFlagNone
@@ -375,7 +375,7 @@ func (s *client) Execute(ctx context.Context, action *CBActionDocument, callback
 			func(result *gocbcore.MutateInResult, err error) {
 				callback(err)
 			})
-	case action.Type == MultiMutateIn:
+	case MultiMutateIn:
 		flags := memd.SubdocDocFlagMkDoc
 		if action.DisableAutoCreate {
 			flags = memd.SubdocDocFlagNone
@@ -386,7 +386,7 @@ func (s *client) Execute(ctx context.Context, action *CBActionDocument, callback
 			func(result *gocbcore.MutateInResult, err error) {
 				callback(err)
 			})
-	case action.Type == ArrayAppend:
+	case ArrayAppend:
 		flags := memd.SubdocDocFlagMkDoc
 		if action.DisableAutoCreate {
 			flags = memd.SubdocDocFlagNone
@@ -397,19 +397,19 @@ func (s *client) Execute(ctx context.Context, action *CBActionDocument, callback
 			func(result *gocbcore.MutateInResult, err error) {
 				callback(err)
 			})
-	case action.Type == DeletePath:
+	case DeletePath:
 		err = s.DeletePath(ctx, s.config.ScopeName, s.config.CollectionName,
 			action.ID, action.Path, casPtr, action.Expiry, action.PreserveExpiry,
 			func(result *gocbcore.MutateInResult, err error) {
 				callback(err)
 			})
-	case action.Type == Delete:
+	case Delete:
 		err = s.DeleteDocument(ctx, s.config.ScopeName, s.config.CollectionName,
 			action.ID, casPtr,
 			func(result *gocbcore.DeleteResult, err error) {
 				callback(err)
 			})
-	case action.Type == Increment:
+	case Increment:
 		err = s.Increment(ctx, s.config.ScopeName, s.config.CollectionName,
 			action.ID, action.Delta, action.Initial, casPtr, action.Expiry, action.PreserveExpiry,
 			func(result *gocbcore.CounterResult, err error) {

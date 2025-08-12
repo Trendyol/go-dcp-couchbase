@@ -141,10 +141,7 @@ func (b *Processor) GetMetric() *Metric {
 }
 
 func (b *Processor) panicOrGo(action *CBActionDocument, err error) {
-	isRequestSuccessful := false
-	if err == nil {
-		isRequestSuccessful = true
-	}
+	isRequestSuccessful := err == nil
 
 	var kvErr *gocbcore.KeyValueError
 	if errors.As(err, &kvErr) && (kvErr.StatusCode == memd.StatusKeyNotFound ||
