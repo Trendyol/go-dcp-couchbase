@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
+	dcpcouchbase "github.com/Trendyol/go-dcp-couchbase"
 	"github.com/Trendyol/go-dcp-couchbase/couchbase"
 	"github.com/bytedance/sonic"
-	"strconv"
 )
 
-func CustomMapperExample() []couchbase.CBActionDocument {
+func CustomMapperExample(ctx couchbase.EventContext) []couchbase.CBActionDocument {
 
 	/*
 
@@ -38,35 +38,29 @@ func CustomMapperExample() []couchbase.CBActionDocument {
 	boolJSON, _ := sonic.Marshal(boolVal)
 	strJSON, _ := sonic.Marshal(strVal)
 
-	// Without JSON Marshal (ASCII/UTF-8 byte array)
-	intRaw := []byte(strconv.Itoa(intVal))
-	boolRaw := []byte(strconv.FormatBool(boolVal))
-	strRaw := []byte(strVal)
-
 	fmt.Println("=== JSON Marshal ===")
-	fmt.Printf("int: %v\n", intJSON)    // [51] -> "3"
+	fmt.Printf("int: %v\n", intJSON)    // [51] -> 3
 	fmt.Printf("bool: %v\n", boolJSON)  // [116 114 117 101] -> true
 	fmt.Printf("string: %v\n", strJSON) // [34 104 101 108 108 111 32 119 111 114 108 100 34] -> "hello world"
-
-	fmt.Println("=== Raw Bytes ===")
-	fmt.Printf("int: %v\n", intRaw)    // [51] -> 3
-	fmt.Printf("bool: %v\n", boolRaw)  // [116 114 117 101] -> true
-	fmt.Printf("string: %v\n", strRaw) // [104 101 108 108 111 32 119 111 114 108 100] -> hello world
 
 	// CBActionDocument examples
 	actions := []couchbase.CBActionDocument{
 		couchbase.NewMutateInAction([]byte("key1"), []byte("intPath"), intJSON),
 		couchbase.NewMutateInAction([]byte("key2"), []byte("boolPath"), boolJSON),
 		couchbase.NewMutateInAction([]byte("key3"), []byte("strPath"), strJSON),
-		couchbase.NewMutateInAction([]byte("key4"), []byte("intRawPath"), intRaw),
-		couchbase.NewMutateInAction([]byte("key5"), []byte("boolRawPath"), boolRaw),
-		couchbase.NewMutateInAction([]byte("key6"), []byte("strRawPath"), strRaw),
 	}
 
 	return actions
 }
 
 func main() {
-	fmt.Println("Running CustomMapperExample...")
-	CustomMapperExample()
+	connector, err := dcpcouchbase.NewConnectorBuilder("config.yml").
+		SetMapper(CustomMapperExample).
+		Build()
+	if err != nil {
+		panic(err)
+	}
+
+	defer connector.Close()
+	connector.Start()
 }
