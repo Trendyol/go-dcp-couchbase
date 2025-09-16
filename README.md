@@ -12,6 +12,7 @@ Couchbase bucket in near real-time.
 * **Scale up and down** by custom membership algorithms(Couchbase, KubernetesHa, Kubernetes StatefulSet or
   Static, see [examples](https://github.com/Trendyol/go-dcp#examples)).
 * **Easily manageable configurations**.
+* **See example package for mutateIn value with primitive types** see [Example](example/custom-mapper-with-primitives)).
 
 ## Concepts
 General Concept
