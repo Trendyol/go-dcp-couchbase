@@ -17,9 +17,16 @@ const (
 	Increment     CbAction = "Increment"
 )
 
+type DocumentType uint8
+
 type CBActionDocument struct {
-	Cas               *uint64
-	Type              CbAction
+	Cas  *uint64
+	Type CbAction
+	// DocumentFlags specifies the common flags for a full-document operation (like Set).
+	// It is used to control data format (JSON, binary, string) and compression.
+	// The value should be generated using gocbcore.EncodeCommonFlags.
+	// If left as 0 (default), the SDK will attempt to infer the data type.
+	DocumentFlags     uint32
 	PathValues        []PathValue
 	Source            []byte
 	ID                []byte
@@ -42,6 +49,12 @@ func (doc *CBActionDocument) SetExpiry(expiry uint32) {
 
 func (doc *CBActionDocument) SetPreserveExpiry(preserveExpiry bool) {
 	doc.PreserveExpiry = preserveExpiry
+}
+
+// SetDocumentFlags sets the common flags for a full-document operation.
+// This allows for explicit control over the document's data format.
+func (doc *CBActionDocument) SetDocumentFlags(flags uint32) {
+	doc.DocumentFlags = flags
 }
 
 func (doc *CBActionDocument) SetDisableAutoCreate(value bool) {
