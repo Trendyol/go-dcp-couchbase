@@ -1,11 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
-
 	"github.com/couchbase/gocbcore/v10"
 
 	dcpcouchbase "github.com/Trendyol/go-dcp-couchbase"
@@ -49,11 +44,4 @@ func main() {
 
 	c.Start()
 	defer c.Close()
-
-	fmt.Println("Connector started")
-
-	// Graceful shutdown
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
-	<-signalChan
 }

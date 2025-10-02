@@ -17,8 +17,6 @@ const (
 	Increment     CbAction = "Increment"
 )
 
-type DocumentType uint8
-
 type CBActionDocument struct {
 	Cas  *uint64
 	Type CbAction
