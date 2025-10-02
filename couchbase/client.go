@@ -360,40 +360,40 @@ func (s *client) Execute(ctx context.Context, action *CBActionDocument, callback
 	switch action.Type {
 	case Set:
 		err = s.CreateDocument(ctx, s.config.ScopeName, s.config.CollectionName,
-			action.ID, action.Source, 0, action.Expiry,
+			action.ID, action.Source, action.DocumentFlags, action.Expiry,
 			func(result *gocbcore.StoreResult, err error) {
 				callback(err)
 			})
 	case MutateIn:
-		flags := memd.SubdocDocFlagMkDoc
+		subDocFlags := memd.SubdocDocFlagMkDoc
 		if action.DisableAutoCreate {
-			flags = memd.SubdocDocFlagNone
+			subDocFlags = memd.SubdocDocFlagNone
 		}
 
 		err = s.CreatePath(ctx, s.config.ScopeName, s.config.CollectionName,
-			action.ID, action.Path, action.Source, flags, casPtr, action.Expiry, action.PreserveExpiry,
+			action.ID, action.Path, action.Source, subDocFlags, casPtr, action.Expiry, action.PreserveExpiry,
 			func(result *gocbcore.MutateInResult, err error) {
 				callback(err)
 			})
 	case MultiMutateIn:
-		flags := memd.SubdocDocFlagMkDoc
+		subDocFlags := memd.SubdocDocFlagMkDoc
 		if action.DisableAutoCreate {
-			flags = memd.SubdocDocFlagNone
+			subDocFlags = memd.SubdocDocFlagNone
 		}
 
 		err = s.CreateMultiPath(ctx, s.config.ScopeName, s.config.CollectionName,
-			action.ID, action.PathValues, flags, casPtr, action.Expiry, action.PreserveExpiry,
+			action.ID, action.PathValues, subDocFlags, casPtr, action.Expiry, action.PreserveExpiry,
 			func(result *gocbcore.MutateInResult, err error) {
 				callback(err)
 			})
 	case ArrayAppend:
-		flags := memd.SubdocDocFlagMkDoc
+		subDocFlags := memd.SubdocDocFlagMkDoc
 		if action.DisableAutoCreate {
-			flags = memd.SubdocDocFlagNone
+			subDocFlags = memd.SubdocDocFlagNone
 		}
 
 		err = s.ArrayAppend(ctx, s.config.ScopeName, s.config.CollectionName,
-			action.ID, action.Path, action.Source, flags, casPtr, action.Expiry, action.PreserveExpiry,
+			action.ID, action.Path, action.Source, subDocFlags, casPtr, action.Expiry, action.PreserveExpiry,
 			func(result *gocbcore.MutateInResult, err error) {
 				callback(err)
 			})
