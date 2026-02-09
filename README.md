@@ -109,6 +109,14 @@ Check out on [go-dcp](https://github.com/Trendyol/go-dcp#configuration)
 
 ## Exposed metrics
 
+| Metric Name                                                      | Description                                                                                                                  | Labels | Value Type |
+|------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|--------|------------|
+| cbgo_couchbase_connector_latency_ms_current                      | The latency in milliseconds from mutation creation in Couchbase to the completion of adding actions into the batch            | N/A    | Gauge      |
+| cbgo_couchbase_connector_mapper_latency_ms_current               | The latency in milliseconds of the mapper function execution                                                                 | N/A    | Gauge      |
+| cbgo_couchbase_connector_bulk_request_process_latency_ms_current | The latency in milliseconds of the bulk write operation to the target Couchbase bucket                                       | N/A    | Gauge      |
+| cbgo_couchbase_connector_bulk_request_size_current               | The number of documents in the latest bulk write request                                                                     | N/A    | Gauge      |
+| cbgo_couchbase_connector_bulk_request_byte_size_current          | The total byte size of documents in the latest bulk write request                                                            | N/A    | Gauge      |
+
 For DCP related metrics see [also](https://github.com/Trendyol/go-dcp#exposed-metrics).
 
 ## Breaking Changes
