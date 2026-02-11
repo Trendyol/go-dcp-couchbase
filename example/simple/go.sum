@@ -1,5 +1,5 @@
-github.com/Trendyol/go-dcp v1.3.0 h1:HGuR8IdjvDOa+pXIhx5CtjyvhqbwqK1endx3B3pOKPQ=
-github.com/Trendyol/go-dcp v1.3.0/go.mod h1:64wxCgb3lVx8YHTg3KKsjZpdpmnwtZ9muYD9gqqtUJE=
+github.com/Trendyol/go-dcp v1.3.1 h1:/w97G11GfmlpHUSKTID8L9LQB4haI8gWQpptMWSt6hg=
+github.com/Trendyol/go-dcp v1.3.1/go.mod h1:64wxCgb3lVx8YHTg3KKsjZpdpmnwtZ9muYD9gqqtUJE=
 github.com/andybalholm/brotli v1.2.0 h1:ukwgCxwYrmACq68yiUqwIWnGY0cTPox/M94sVwToPjQ=
 github.com/andybalholm/brotli v1.2.0/go.mod h1:rzTDkvFWvIrjDXZHkuS16NPggd91W3kUSvPlQ1pLaKY=
 github.com/ansrivas/fiberprometheus/v2 v2.13.0 h1:AaEumvQHYl7NnirDSf6NWI/pPXNIZqZt7kz3K2TrvQw=

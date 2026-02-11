@@ -7,7 +7,7 @@ toolchain go1.24.5
 replace github.com/Trendyol/go-dcp-couchbase => ../../.
 
 require (
-	github.com/Trendyol/go-dcp v1.3.0
+	github.com/Trendyol/go-dcp v1.3.1
 	github.com/Trendyol/go-dcp-couchbase v0.0.0
 )
 

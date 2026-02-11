@@ -6,15 +6,17 @@ toolchain go1.24.5
 
 replace github.com/Trendyol/go-dcp-couchbase => ./../..
 
-require github.com/Trendyol/go-dcp-couchbase v0.0.0
+require (
+	github.com/Trendyol/go-dcp-couchbase v0.0.0
+	github.com/bytedance/sonic v1.14.0
+)
 
 require (
-	github.com/Trendyol/go-dcp v1.3.0 // indirect
+	github.com/Trendyol/go-dcp v1.3.1 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/ansrivas/fiberprometheus/v2 v2.13.0 // indirect
 	github.com/asaskevich/EventBus v0.0.0-20200907212545-49d423059eef // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bytedance/sonic v1.14.0 // indirect
 	github.com/bytedance/sonic/loader v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.5 // indirect
