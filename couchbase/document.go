@@ -20,24 +20,20 @@ const (
 )
 
 type CBActionDocument struct {
-	Cas  *uint64
-	Type CbAction
-	// DocumentFlags specifies the common flags for a full-document operation (like Set).
-	// It is used to control data format (JSON, binary, string) and compression.
-	// The value should be generated using gocbcore.EncodeCommonFlags.
-	// If left as 0 (default), the SDK will attempt to infer the data type.
-	DocumentFlags     uint32
-	PathValues        []PathValue
+	EventTime         time.Time
+	Cas               *uint64
+	Type              CbAction
+	Path              []byte
 	Source            []byte
 	ID                []byte
-	Path              []byte
+	PathValues        []PathValue
 	Size              int
-	Expiry            uint32
-	PreserveExpiry    bool
-	DisableAutoCreate bool
 	Initial           uint64
 	Delta             uint64
-	EventTime		  time.Time
+	Expiry            uint32
+	DocumentFlags     uint32
+	PreserveExpiry    bool
+	DisableAutoCreate bool
 }
 
 func (doc *CBActionDocument) SetCas(cas uint64) {
