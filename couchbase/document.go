@@ -1,5 +1,7 @@
 package couchbase
 
+import "time"
+
 type CbAction string
 
 type PathValue struct {
@@ -35,6 +37,7 @@ type CBActionDocument struct {
 	DisableAutoCreate bool
 	Initial           uint64
 	Delta             uint64
+	EventTime		  time.Time
 }
 
 func (doc *CBActionDocument) SetCas(cas uint64) {

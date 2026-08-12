@@ -118,11 +118,13 @@ func (b *Processor) AddActions(
 	isLastChunk bool,
 ) {
 	b.flushLock.Lock()
-	b.batch = append(b.batch, actions...)
 	b.batchSize += len(actions)
-	for _, action := range actions {
+	for i, action := range actions {
 		b.batchByteSize += action.Size
+		actions[i].EventTime = eventTime
 	}
+	b.batch = append(b.batch, actions...)
+
 	if isLastChunk {
 		ctx.Ack()
 	}
