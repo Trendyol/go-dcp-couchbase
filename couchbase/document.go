@@ -1,6 +1,10 @@
 package couchbase
 
-import "time"
+import (
+	"time"
+
+	"github.com/couchbase/gocbcore/v10"
+)
 
 type CbAction string
 
@@ -27,6 +31,7 @@ type CBActionDocument struct {
 	Source            []byte
 	ID                []byte
 	PathValues        []PathValue
+	SubDocOps         []gocbcore.SubDocOp
 	Size              int
 	Initial           uint64
 	Delta             uint64
@@ -87,6 +92,20 @@ func NewMultiMutateInAction(key []byte, pathValues []PathValue) CBActionDocument
 		PathValues: pathValues,
 		Type:       MultiMutateIn,
 		Size:       size,
+	}
+}
+
+func NewMultiMutateInActionWithOps(key []byte, ops []gocbcore.SubDocOp) CBActionDocument {
+	size := len(key)
+	for _, op := range ops {
+		size += len(op.Path) + len(op.Value)
+	}
+
+	return CBActionDocument{
+		ID:        key,
+		Type:      MultiMutateIn,
+		SubDocOps: ops,
+		Size:      size,
 	}
 }
 
