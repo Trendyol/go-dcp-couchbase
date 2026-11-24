@@ -150,6 +150,51 @@ func (s *client) CreateMultiPath(ctx context.Context,
 	return err
 }
 
+func (s *client) CreateMultiMutateSubDocPaths(ctx context.Context,
+	scopeName string,
+	collectionName string,
+	id []byte,
+	pathValues []PathValue,
+	subDocOps []gocbcore.SubDocOp,
+	flags memd.SubdocDocFlag,
+	cas *gocbcore.Cas,
+	expiry uint32,
+	preserveExpiry bool,
+	cb gocbcore.MutateInCallback,
+) error {
+	deadline, _ := ctx.Deadline()
+
+	ops := make([]gocbcore.SubDocOp, len(pathValues), len(pathValues)+len(subDocOps))
+	for i, pv := range pathValues {
+		ops[i] = gocbcore.SubDocOp{
+			Op:    memd.SubDocOpDictSet,
+			Path:  string(pv.Path),
+			Value: pv.Value,
+		}
+	}
+	ops = append(ops, subDocOps...)
+
+	options := gocbcore.MutateInOptions{
+		Key:            id,
+		Flags:          flags,
+		Ops:            ops,
+		Expiry:         expiry,
+		PreserveExpiry: preserveExpiry,
+		Deadline:       deadline,
+		ScopeName:      scopeName,
+		CollectionName: collectionName,
+		RetryStrategy:  gocbcore.NewBestEffortRetryStrategy(nil),
+	}
+
+	if cas != nil {
+		options.Cas = *cas
+	}
+
+	_, err := s.agent.MutateIn(options, cb)
+
+	return err
+}
+
 func (s *client) CreatePath(ctx context.Context,
 	scopeName string,
 	collectionName string,
@@ -381,8 +426,8 @@ func (s *client) Execute(ctx context.Context, action *CBActionDocument, callback
 			subDocFlags = memd.SubdocDocFlagNone
 		}
 
-		err = s.CreateMultiPath(ctx, s.config.ScopeName, s.config.CollectionName,
-			action.ID, action.PathValues, subDocFlags, casPtr, action.Expiry, action.PreserveExpiry,
+		err = s.CreateMultiMutateSubDocPaths(ctx, s.config.ScopeName, s.config.CollectionName,
+			action.ID, action.PathValues, action.SubDocOps, subDocFlags, casPtr, action.Expiry, action.PreserveExpiry,
 			func(result *gocbcore.MutateInResult, err error) {
 				callback(err)
 			})
